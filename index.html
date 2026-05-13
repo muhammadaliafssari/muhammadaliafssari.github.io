@@ -1,181 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Soccer Game vs Bots</title>
+
 <style>
-    *{
-        margin:0;
-        padding:0;
-        box-sizing:border-box;
-    }
+body{
+    margin:0;
+    overflow:hidden;
+    background:#1e7d32;
+    font-family:Arial;
+}
 
-    body{
-        overflow:hidden;
-        background:#1e7d32;
-        font-family:Arial, sans-serif;
-    }
+/* FIELD */
+#field{
+    width:100vw;
+    height:100vh;
+    position:relative;
+    background:linear-gradient(to right,#1e7d32,#2e9b40,#1e7d32);
+}
 
-    /* Soccer Field */
-    #field{
-        width:100vw;
-        height:100vh;
-        position:relative;
-        background:
-            linear-gradient(
-                to right,
-                #1e7d32 0%,
-                #228b38 50%,
-                #1e7d32 100%
-            );
-    }
+/* GOALS */
+.goal{
+    position:absolute;
+    width:20px;
+    height:200px;
+    background:white;
+    top:50%;
+    transform:translateY(-50%);
+}
+#goalLeft{ left:0; }
+#goalRight{ right:0; }
 
-    /* Field lines */
-    .mid-line{
-        position:absolute;
-        left:50%;
-        top:0;
-        width:4px;
-        height:100%;
-        background:white;
-        transform:translateX(-50%);
-    }
+/* SCORE */
+#score{
+    position:absolute;
+    top:10px;
+    left:10px;
+    color:white;
+    font-size:22px;
+    background:rgba(0,0,0,0.4);
+    padding:8px 12px;
+    border-radius:10px;
+}
 
-    .center-circle{
-        position:absolute;
-        width:180px;
-        height:180px;
-        border:5px solid white;
-        border-radius:50%;
-        left:50%;
-        top:50%;
-        transform:translate(-50%, -50%);
-    }
+/* PLAYER */
+.player{
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    position:absolute;
+}
 
-    /* Player */
-    #player{
-        width:70px;
-        height:70px;
-        background:#1976d2;
-        border-radius:50%;
-        position:absolute;
-        left:200px;
-        top:200px;
-        border:4px solid white;
-        transition:transform 0.05s linear;
-    }
+/* human */
+#player{
+    background:#1976d2;
+}
 
-    /* Soccer Ball */
-    #ball{
-        width:45px;
-        height:45px;
-        background:white;
-        border-radius:50%;
-        position:absolute;
-        left:500px;
-        top:300px;
-        border:3px solid black;
-        overflow:hidden;
-    }
+/* bots */
+.bot{
+    background:#e53935;
+}
 
-    /* Ball pattern */
-    #ball::before{
-        content:"";
-        position:absolute;
-        inset:8px;
-        background:
-            radial-gradient(circle, black 20%, transparent 21%);
-        background-size:14px 14px;
-    }
+/* BALL */
+#ball{
+    width:45px;
+    height:45px;
+    position:absolute;
+    pointer-events:none;
+}
 
-    /* Instructions */
-    .info{
-        position:absolute;
-        top:15px;
-        left:15px;
-        color:white;
-        font-size:20px;
-        background:rgba(0,0,0,0.4);
-        padding:10px 15px;
-        border-radius:12px;
-    }
+#ball img{
+    width:100%;
+    height:100%;
+}
+
+/* CENTER LINE */
+#line{
+    position:absolute;
+    left:50%;
+    top:0;
+    width:4px;
+    height:100%;
+    background:white;
+    transform:translateX(-50%);
+}
 </style>
 </head>
+
 <body>
-
 <div id="field">
-    <div class="mid-line"></div>
-    <div class="center-circle"></div>
+    <div id="line"></div>
+    <div id="goalLeft" class="goal"></div>
+    <div id="goalRight" class="goal"></div>
 
-    <div class="info">
-        WASD = Move Player<br>
-        Move Mouse = Soccer Ball Follows
+    <div id="score">Player: 0 | Bots: 0</div>
+
+    <div id="player" class="player"></div>
+
+    <div class="bot player" id="bot1"></div>
+    <div class="bot player" id="bot2"></div>
+
+    <div id="ball">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d3/Soccerball.svg">
     </div>
-
-    <div id="player"></div>
-    <div id="ball"></div>
 </div>
 
 <script>
-    const player = document.getElementById("player");
-    const ball = document.getElementById("ball");
+const player = document.getElementById("player");
+const bot1 = document.getElementById("bot1");
+const bot2 = document.getElementById("bot2");
+const ball = document.getElementById("ball");
 
-    // PLAYER POSITION
-    let playerX = 200;
-    let playerY = 200;
-    const speed = 6;
+const scoreText = document.getElementById("score");
 
-    // KEY CONTROLS
-    const keys = {};
+let playerScore = 0;
+let botScore = 0;
 
-    document.addEventListener("keydown", (e) => {
-        keys[e.key.toLowerCase()] = true;
-    });
+/* POSITIONS */
+let px = 200, py = 200;
+let bx = 300, by = 300;
+let ballX = 500, ballY = 300;
 
-    document.addEventListener("keyup", (e) => {
-        keys[e.key.toLowerCase()] = false;
-    });
+/* KEYBOARD */
+const keys = {};
+document.addEventListener("keydown", e => keys[e.key.toLowerCase()] = true);
+document.addEventListener("keyup", e => keys[e.key.toLowerCase()] = false);
 
-    // MOVE PLAYER
-    function movePlayer(){
+/* MOUSE CONTROLS BALL (dribble control) */
+let mouseX = ballX, mouseY = ballY;
+document.addEventListener("mousemove", e=>{
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
 
-        if(keys["w"]) playerY -= speed;
-        if(keys["s"]) playerY += speed;
-        if(keys["a"]) playerX -= speed;
-        if(keys["d"]) playerX += speed;
+/* MOVE PLAYER */
+function movePlayer(){
+    let speed = 5;
 
-        // Keep inside screen
-        playerX = Math.max(0, Math.min(window.innerWidth - 70, playerX));
-        playerY = Math.max(0, Math.min(window.innerHeight - 70, playerY));
+    if(keys["w"]) py -= speed;
+    if(keys["s"]) py += speed;
+    if(keys["a"]) px -= speed;
+    if(keys["d"]) px += speed;
 
-        player.style.left = playerX + "px";
-        player.style.top = playerY + "px";
+    px = Math.max(0, Math.min(window.innerWidth-60, px));
+    py = Math.max(0, Math.min(window.innerHeight-60, py));
 
-        requestAnimationFrame(movePlayer);
+    player.style.left = px + "px";
+    player.style.top = py + "px";
+
+    requestAnimationFrame(movePlayer);
+}
+movePlayer();
+
+/* BOT AI */
+function moveBot(botEl, x, y){
+    let speed = 2.5;
+
+    let dx = ballX - x;
+    let dy = ballY - y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+
+    if(dist > 1){
+        x += (dx / dist) * speed;
+        y += (dy / dist) * speed;
     }
 
-    movePlayer();
+    botEl.style.left = x + "px";
+    botEl.style.top = y + "px";
 
-    // BALL FOLLOWS MOUSE
-    let mouseX = 500;
-    let mouseY = 300;
+    return {x,y};
+}
 
-    document.addEventListener("mousemove", (e)=>{
-        mouseX = e.clientX;
-        mouseY = e.clientY;
-    });
+/* BALL PHYSICS */
+function updateBall(){
 
-    let ballX = 500;
-    let ballY = 300;
+    // ball follows mouse slightly
+    ballX += (mouseX - ballX) * 0.05;
+    ballY += (mouseY - ballY) * 0.05;
 
-    function moveBall(){
-        // Smooth follow effect
-        ballX += (mouseX - ballX) * 0.08;
-        ballY += (mouseY - ballY) * 0.08;
+    // collision with player (kick effect)
+    let dx = ballX - px;
+    let dy = ballY - py;
+    let dist = Math.sqrt(dx*dx + dy*dy);
 
-        ball.style.left = ballX + "px";
-        ball.style.top = ballY + "px";
-
-        requestAnimationFrame(moveBall);
+    if(dist < 60){
+        ballX += dx * 0.2;
+        ballY += dy * 0.2;
     }
 
-    moveBall();
+    // goals
+    if(ballX < 20 && ballY > window.innerHeight/2 - 100 && ballY < window.innerHeight/2 + 100){
+        botScore++;
+        resetBall();
+    }
+
+    if(ballX > window.innerWidth - 20 && ballY > window.innerHeight/2 - 100 && ballY < window.innerHeight/2 + 100){
+        playerScore++;
+        resetBall();
+    }
+
+    scoreText.textContent = `Player: ${playerScore} | Bots: ${botScore}`;
+
+    ball.style.left = ballX + "px";
+    ball.style.top = ballY + "px";
+
+    requestAnimationFrame(updateBall);
+}
+
+/* RESET BALL */
+function resetBall(){
+    ballX = window.innerWidth/2;
+    ballY = window.innerHeight/2;
+}
+
+/* GAME LOOP */
+function gameLoop(){
+
+    let b1 = moveBot(bot1, parseFloat(bot1.style.left)||400, parseFloat(bot1.style.top)||200);
+    let b2 = moveBot(bot2, parseFloat(bot2.style.left)||600, parseFloat(bot2.style.top)||400);
+
+    requestAnimationFrame(gameLoop);
+}
+
+updateBall();
+gameLoop();
 </script>
 
 </body>
 </html>
+⚙️ What this version does
+Bots chase the ball automatically (simple AI steering)
+Player moves with WASD
+Ball uses a real soccer ball image (Wikimedia SVG)
+You can score goals left/right
+Ball reacts when you touch it (kick physics)
+
+If you want next upgrades, I can add:
+
+💥 
+real kicking power (spacebar shoot)
+🧤 
+goalie AI
+🎮 
+team system (2v2 or 5v5)
+🏟️ 
+stadium + crowd
+📱 
+mobile touch controls
+
+Just tell me.
