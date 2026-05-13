@@ -1,13 +1,83 @@
-<!DOCTYPE html>
-<html> 
-<h1>
-Liverpool FC
-</h1>
-<h2>
-  PLAYERS:
- <h2/> 
-   <h2>Goal Keepers:
-<a href="https://www.google.com/search?q=Alisson+Becker&rlz=1CABTWW_enUS1176&oq=A&gs_lcrp=EgZjaHJvbWUqBggAEEUYOzIGCAAQRRg7MgYIARBFGDsyEwgCEC4YgwEYxwEYsQMY0QMYgAQyEwgDEC4YgwEYxwEYsQMY0QMYgAQyBggEEEUYPTIGCAUQRRg9MgYIBhBFGDwyBggHEEUYPNIBCDQ0MjZqMGo3qAIIsAIB8QVtoWhvQQnDhA&sourceid=chrome&ie=UTF-8&safe=active&ssui=on">Alisson Becker</a>
-  <a href="https://www.google.com/search?gs_ssp=eJzj4tVP1zc0TDMwLiuyLDM2YPTizU3MTSxKSSzOKMvMyQQAiG8JvA&q=mamardashvili&rlz=1CABTWW_enUS1176&oq=mamardas&gs_lcrp=EgZjaHJvbWUqCggBEC4YsQMYgAQyBggAEEUYOTIKCAEQLhixAxiABDIHCAIQABiABDIHCAMQABiABDIHCAQQABiABDIHCAUQABiABDIHCAYQABiABDIHCAcQABiABDIHCAgQABiABNIBCDcyODRqMGo3qAIIsAIB8QVvA95mu2MWvvEFbwPeZrtjFr4&sourceid=chrome&ie=UTF-8&safe=active&ssui=on">Giorgi Mamardashvili<a/>
-   </h2>
-</html>
+import { useEffect, useState } from 'react';
+
+                <div className="bg-black/30 rounded-xl p-4 border border-white/10">
+                  <p className="text-sm text-slate-400 mb-1">Team Chemistry</p>
+                  <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
+                    <div className="w-[100%] h-full bg-gradient-to-r from-yellow-300 to-orange-500 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="features" className="mt-32 grid md:grid-cols-3 gap-8">
+          {[
+            {
+              title: 'Fast Gameplay',
+              text: 'Quick reactions and smooth movement create an intense arcade soccer feeling.',
+            },
+            {
+              title: 'Epic Stadiums',
+              text: 'Neon stadium lighting and futuristic arenas bring every match to life.',
+            },
+            {
+              title: 'Multiplayer Ready',
+              text: 'Challenge friends and dominate matches across every device.',
+            },
+          ].map((card, index) => (
+            <div
+              key={index}
+              className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-lg hover:-translate-y-2 transition-transform shadow-xl"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 mb-6"></div>
+              <h3 className="text-2xl font-bold mb-4">{card.title}</h3>
+              <p className="text-slate-300 leading-relaxed">{card.text}</p>
+            </div>
+          ))}
+        </section>
+
+        <section id="gallery" className="mt-32">
+          <div className="flex items-center justify-between mb-10">
+            <h2 className="text-5xl font-black">Soccer Arenas</h2>
+            <p className="text-slate-400">Legendary neon stadiums</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((item) => (
+              <div
+                key={item}
+                className="h-56 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 backdrop-blur-xl hover:scale-[1.03] transition-transform relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-purple-500/10"></div>
+                <div className="absolute bottom-4 left-4">
+                  <p className="text-xl font-bold">Panel 0{item}</p>
+                  <p className="text-slate-300 text-sm">Elite soccer zone</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section
+          id="contact"
+          className="mt-32 bg-white/5 border border-white/10 rounded-[2rem] p-10 backdrop-blur-xl text-center"
+        >
+          <h2 className="text-5xl font-black mb-6">Ready For Kickoff?</h2>
+          <p className="text-slate-300 max-w-2xl mx-auto mb-8 text-lg">
+            Enter the neon soccer arena, score incredible goals, and become the ultimate futuristic football champion.
+          </p>
+
+          <button className="px-10 py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-black font-black text-lg hover:scale-105 transition-transform shadow-2xl shadow-purple-500/30">
+            Start Match
+          </button>
+        </section>
+      </main>
+
+      <footer className="relative z-10 text-center py-8 text-slate-400 border-t border-white/10 mt-20">
+        Built with React + Tailwind • Neon Football 2026
+      </footer>
+    </div>
+  );
+}
+
