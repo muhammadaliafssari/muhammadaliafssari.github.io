@@ -1,83 +1,181 @@
-import { useEffect, useState } from 'react';
+<style>
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+    }
 
-                <div className="bg-black/30 rounded-xl p-4 border border-white/10">
-                  <p className="text-sm text-slate-400 mb-1">Team Chemistry</p>
-                  <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-                    <div className="w-[100%] h-full bg-gradient-to-r from-yellow-300 to-orange-500 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+    body{
+        overflow:hidden;
+        background:#1e7d32;
+        font-family:Arial, sans-serif;
+    }
 
-        <section id="features" className="mt-32 grid md:grid-cols-3 gap-8">
-          {[
-            {
-              title: 'Fast Gameplay',
-              text: 'Quick reactions and smooth movement create an intense arcade soccer feeling.',
-            },
-            {
-              title: 'Epic Stadiums',
-              text: 'Neon stadium lighting and futuristic arenas bring every match to life.',
-            },
-            {
-              title: 'Multiplayer Ready',
-              text: 'Challenge friends and dominate matches across every device.',
-            },
-          ].map((card, index) => (
-            <div
-              key={index}
-              className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-lg hover:-translate-y-2 transition-transform shadow-xl"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 mb-6"></div>
-              <h3 className="text-2xl font-bold mb-4">{card.title}</h3>
-              <p className="text-slate-300 leading-relaxed">{card.text}</p>
-            </div>
-          ))}
-        </section>
+    /* Soccer Field */
+    #field{
+        width:100vw;
+        height:100vh;
+        position:relative;
+        background:
+            linear-gradient(
+                to right,
+                #1e7d32 0%,
+                #228b38 50%,
+                #1e7d32 100%
+            );
+    }
 
-        <section id="gallery" className="mt-32">
-          <div className="flex items-center justify-between mb-10">
-            <h2 className="text-5xl font-black">Soccer Arenas</h2>
-            <p className="text-slate-400">Legendary neon stadiums</p>
-          </div>
+    /* Field lines */
+    .mid-line{
+        position:absolute;
+        left:50%;
+        top:0;
+        width:4px;
+        height:100%;
+        background:white;
+        transform:translateX(-50%);
+    }
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((item) => (
-              <div
-                key={item}
-                className="h-56 rounded-3xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 backdrop-blur-xl hover:scale-[1.03] transition-transform relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/10 to-purple-500/10"></div>
-                <div className="absolute bottom-4 left-4">
-                  <p className="text-xl font-bold">Panel 0{item}</p>
-                  <p className="text-slate-300 text-sm">Elite soccer zone</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+    .center-circle{
+        position:absolute;
+        width:180px;
+        height:180px;
+        border:5px solid white;
+        border-radius:50%;
+        left:50%;
+        top:50%;
+        transform:translate(-50%, -50%);
+    }
 
-        <section
-          id="contact"
-          className="mt-32 bg-white/5 border border-white/10 rounded-[2rem] p-10 backdrop-blur-xl text-center"
-        >
-          <h2 className="text-5xl font-black mb-6">Ready For Kickoff?</h2>
-          <p className="text-slate-300 max-w-2xl mx-auto mb-8 text-lg">
-            Enter the neon soccer arena, score incredible goals, and become the ultimate futuristic football champion.
-          </p>
+    /* Player */
+    #player{
+        width:70px;
+        height:70px;
+        background:#1976d2;
+        border-radius:50%;
+        position:absolute;
+        left:200px;
+        top:200px;
+        border:4px solid white;
+        transition:transform 0.05s linear;
+    }
 
-          <button className="px-10 py-5 rounded-2xl bg-gradient-to-r from-cyan-400 to-purple-500 text-black font-black text-lg hover:scale-105 transition-transform shadow-2xl shadow-purple-500/30">
-            Start Match
-          </button>
-        </section>
-      </main>
+    /* Soccer Ball */
+    #ball{
+        width:45px;
+        height:45px;
+        background:white;
+        border-radius:50%;
+        position:absolute;
+        left:500px;
+        top:300px;
+        border:3px solid black;
+        overflow:hidden;
+    }
 
-      <footer className="relative z-10 text-center py-8 text-slate-400 border-t border-white/10 mt-20">
-        Built with React + Tailwind • Neon Football 2026
-      </footer>
+    /* Ball pattern */
+    #ball::before{
+        content:"";
+        position:absolute;
+        inset:8px;
+        background:
+            radial-gradient(circle, black 20%, transparent 21%);
+        background-size:14px 14px;
+    }
+
+    /* Instructions */
+    .info{
+        position:absolute;
+        top:15px;
+        left:15px;
+        color:white;
+        font-size:20px;
+        background:rgba(0,0,0,0.4);
+        padding:10px 15px;
+        border-radius:12px;
+    }
+</style>
+</head>
+<body>
+
+<div id="field">
+    <div class="mid-line"></div>
+    <div class="center-circle"></div>
+
+    <div class="info">
+        WASD = Move Player<br>
+        Move Mouse = Soccer Ball Follows
     </div>
-  );
-}
 
+    <div id="player"></div>
+    <div id="ball"></div>
+</div>
+
+<script>
+    const player = document.getElementById("player");
+    const ball = document.getElementById("ball");
+
+    // PLAYER POSITION
+    let playerX = 200;
+    let playerY = 200;
+    const speed = 6;
+
+    // KEY CONTROLS
+    const keys = {};
+
+    document.addEventListener("keydown", (e) => {
+        keys[e.key.toLowerCase()] = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+        keys[e.key.toLowerCase()] = false;
+    });
+
+    // MOVE PLAYER
+    function movePlayer(){
+
+        if(keys["w"]) playerY -= speed;
+        if(keys["s"]) playerY += speed;
+        if(keys["a"]) playerX -= speed;
+        if(keys["d"]) playerX += speed;
+
+        // Keep inside screen
+        playerX = Math.max(0, Math.min(window.innerWidth - 70, playerX));
+        playerY = Math.max(0, Math.min(window.innerHeight - 70, playerY));
+
+        player.style.left = playerX + "px";
+        player.style.top = playerY + "px";
+
+        requestAnimationFrame(movePlayer);
+    }
+
+    movePlayer();
+
+    // BALL FOLLOWS MOUSE
+    let mouseX = 500;
+    let mouseY = 300;
+
+    document.addEventListener("mousemove", (e)=>{
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    let ballX = 500;
+    let ballY = 300;
+
+    function moveBall(){
+        // Smooth follow effect
+        ballX += (mouseX - ballX) * 0.08;
+        ballY += (mouseY - ballY) * 0.08;
+
+        ball.style.left = ballX + "px";
+        ball.style.top = ballY + "px";
+
+        requestAnimationFrame(moveBall);
+    }
+
+    moveBall();
+</script>
+
+</body>
+</html>
