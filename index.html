@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ultimate Soccer Arena X</title>
+<title>Next Gen Soccer</title>
 
 <style>
 
@@ -16,33 +16,37 @@
 
 body{
     overflow:hidden;
-    background:#000;
+    background:#0b0b0b;
 }
 
 /* GAME */
 
 #game{
+    position:relative;
     width:100vw;
     height:100vh;
-    position:relative;
     overflow:hidden;
+
     background:
     repeating-linear-gradient(
         90deg,
-        #1f8f3c 0px,
-        #1f8f3c 120px,
-        #29a848 120px,
-        #29a848 240px
+        #1b8a3d 0px,
+        #1b8a3d 120px,
+        #2ca84c 120px,
+        #2ca84c 240px
     );
 }
 
 /* FIELD */
 
-.center-line{
+.line{
     position:absolute;
+    background:white;
+}
+
+.center-line{
     width:4px;
     height:100%;
-    background:white;
     left:50%;
     transform:translateX(-50%);
 }
@@ -58,104 +62,136 @@ body{
     transform:translate(-50%,-50%);
 }
 
+.goal-box{
+    position:absolute;
+    width:170px;
+    height:340px;
+    border:5px solid white;
+    top:50%;
+    transform:translateY(-50%);
+}
+
+.goal-box.left{
+    left:0;
+}
+
+.goal-box.right{
+    right:0;
+}
+
 .goal{
     position:absolute;
     width:25px;
-    height:220px;
+    height:340px;
     background:white;
     top:50%;
     transform:translateY(-50%);
 }
 
-.goal.left{ left:0; }
-.goal.right{ right:0; }
+.goal.left{
+    left:0;
+}
+
+.goal.right{
+    right:0;
+}
 
 /* PLAYERS */
 
 .player,
 .cpu,
-.goalie{
+.player-goalie,
+.cpu-goalie{
     position:absolute;
     border-radius:50%;
     border:4px solid white;
 }
 
-/* USER */
+/* MAIN PLAYER */
 
 .player{
-    width:80px;
-    height:80px;
-    background:#1c7ed6;
-    box-shadow:0 0 25px #4dabf7;
+    width:82px;
+    height:82px;
+    background:#1971c2;
+    box-shadow:0 0 30px #4dabf7;
 }
 
 /* CPU */
 
 .cpu{
-    width:80px;
-    height:80px;
-    background:#fa5252;
-    box-shadow:0 0 25px #ff8787;
+    width:82px;
+    height:82px;
+    background:#e03131;
+    box-shadow:0 0 30px #ff6b6b;
 }
 
-/* GOALIE */
+/* GOALIES */
 
-.goalie{
-    width:65px;
-    height:65px;
-    background:#fcc419;
-    box-shadow:0 0 20px #ffe066;
+.player-goalie{
+    width:70px;
+    height:70px;
+    background:#7048e8;
+    box-shadow:0 0 25px #b197fc;
+}
+
+.cpu-goalie{
+    width:70px;
+    height:70px;
+    background:#f59f00;
+    box-shadow:0 0 25px #ffd43b;
 }
 
 /* BALL */
 
 .ball{
     position:absolute;
-    width:45px;
-    height:45px;
+    width:48px;
+    height:48px;
     border-radius:50%;
+
     background:
-    radial-gradient(circle at 30% 30%, white, #ccc);
+    radial-gradient(circle at 30% 30%,white,#ccc);
+
     border:3px solid black;
-    box-shadow:0 0 20px rgba(0,0,0,0.7);
+
+    box-shadow:0 0 20px rgba(0,0,0,0.8);
 }
 
-/* SCORE */
+/* HUD */
 
-.scoreboard{
+.hud{
     position:absolute;
-    top:15px;
     width:100%;
-    text-align:center;
+    top:15px;
+
+    display:flex;
+    justify-content:center;
+    gap:50px;
+
     color:white;
-    font-size:45px;
+    font-size:42px;
     font-weight:bold;
+
     text-shadow:3px 3px 8px black;
+
     z-index:10;
-}
-
-/* TIMER */
-
-.timer{
-    position:absolute;
-    top:20px;
-    right:25px;
-    color:white;
-    font-size:30px;
-    font-weight:bold;
 }
 
 /* STAMINA */
 
 .stamina-box{
     position:absolute;
-    top:20px;
     left:20px;
-    width:250px;
-    height:25px;
-    border:2px solid white;
+    top:20px;
+
+    width:260px;
+    height:24px;
+
     border-radius:20px;
     overflow:hidden;
+
+    border:2px solid white;
+
     background:#333;
 }
 
@@ -163,20 +199,23 @@ body{
     width:100%;
     height:100%;
     background:lime;
-    transition:0.1s;
 }
 
-/* POWER BAR */
+/* POWER */
 
 .power-box{
     position:absolute;
-    bottom:20px;
     left:20px;
-    width:250px;
-    height:22px;
-    border:2px solid white;
+    top:60px;
+
+    width:260px;
+    height:20px;
+
     border-radius:20px;
     overflow:hidden;
+
+    border:2px solid white;
+
     background:#333;
 }
 
@@ -186,57 +225,93 @@ body{
     background:orange;
 }
 
+/* TIMER */
+
+.timer{
+    position:absolute;
+    top:20px;
+    right:20px;
+
+    color:white;
+    font-size:32px;
+    font-weight:bold;
+}
+
 /* CONTROLS */
 
 .controls{
     position:absolute;
-    bottom:20px;
-    right:20px;
-    color:white;
-    background:rgba(0,0,0,0.45);
-    padding:15px;
-    border-radius:14px;
-    font-size:18px;
-}
-
-/* BOOST TEXT */
-
-.boost{
-    position:absolute;
-    top:55px;
     left:20px;
+    bottom:20px;
+
+    padding:16px;
+
     color:white;
+
+    background:rgba(0,0,0,0.45);
+
+    border-radius:14px;
+
     font-size:18px;
 }
 
-/* WIN SCREEN */
+/* MINIMAP */
+
+.minimap{
+    position:absolute;
+    right:20px;
+    bottom:20px;
+
+    width:220px;
+    height:120px;
+
+    border:2px solid white;
+
+    background:rgba(0,0,0,0.4);
+
+    border-radius:12px;
+}
+
+/* WIN */
 
 #winner{
     position:absolute;
     inset:0;
-    background:rgba(0,0,0,0.9);
+
+    background:rgba(0,0,0,0.92);
+
     display:none;
+
     justify-content:center;
     align-items:center;
     flex-direction:column;
+
     z-index:999;
+
     color:white;
 }
 
 #winner h1{
-    font-size:90px;
+    font-size:100px;
     margin-bottom:25px;
-    text-shadow:0 0 25px white;
+
+    text-shadow:0 0 30px white;
 }
 
 #winner button{
-    padding:16px 40px;
+    padding:16px 42px;
+
     border:none;
-    border-radius:15px;
-    background:#37b24d;
+    border-radius:14px;
+
+    background:#2f9e44;
+
     color:white;
+
     font-size:25px;
+
     cursor:pointer;
+
     transition:0.2s;
 }
 
@@ -248,10 +323,14 @@ body{
 
 .particle{
     position:absolute;
+
     width:10px;
     height:10px;
+
     border-radius:50%;
+
     background:white;
+
     pointer-events:none;
 }
 
@@ -263,22 +342,20 @@ body{
 <div id="game">
 
     <!-- FIELD -->
-    <div class="center-line"></div>
+    <div class="line center-line"></div>
+
     <div class="center-circle"></div>
+
+    <div class="goal-box left"></div>
+    <div class="goal-box right"></div>
 
     <div class="goal left"></div>
     <div class="goal right"></div>
 
-    <!-- SCORE -->
-    <div class="scoreboard">
-        PLAYER <span id="pScore">0</span>
-        -
-        <span id="cScore">0</span> CPU
-    </div>
-
-    <!-- TIMER -->
-    <div class="timer">
-        ⏱ <span id="time">90</span>
+    <!-- HUD -->
+    <div class="hud">
+        <div>PLAYER <span id="playerScore">0</span></div>
+        <div>CPU <span id="cpuScore">0</span></div>
     </div>
 
     <!-- STAMINA -->
@@ -286,70 +363,124 @@ body{
         <div class="stamina" id="stamina"></div>
     </div>
 
-    <div class="boost">
-        SHIFT = Sprint
-    </div>
-
     <!-- POWER -->
     <div class="power-box">
         <div class="power" id="power"></div>
     </div>
 
-    <!-- OBJECTS -->
+    <!-- TIMER -->
+    <div class="timer">
+        ⏱ <span id="time">180</span>
+    </div>
+
+    <!-- PLAYERS -->
     <div class="player" id="player"></div>
+
     <div class="cpu" id="cpu"></div>
-    <div class="goalie" id="goalie"></div>
+
+    <!-- GOALIES -->
+    <div class="player-goalie" id="playerGoalie"></div>
+
+    <div class="cpu-goalie" id="cpuGoalie"></div>
+
+    <!-- BALL -->
     <div class="ball" id="ball"></div>
 
     <!-- CONTROLS -->
     <div class="controls">
         W A S D = Move<br>
         SHIFT = Sprint<br>
-        SPACE = Power Shot<br>
-        Beat the CPU!
+        SPACE = Charge Shot
     </div>
+
+    <!-- MINIMAP -->
+    <div class="minimap"></div>
 
     <!-- WIN -->
     <div id="winner">
         <h1 id="winnerText"></h1>
-        <button onclick="restartGame()">PLAY AGAIN</button>
+
+        <button onclick="restartGame()">
+            PLAY AGAIN
+        </button>
     </div>
 
 </div>
 
 <script>
 
-/* ELEMENTS */
+/* =========================
+   ELEMENTS
+========================= */
 
 const player = document.getElementById("player");
 const cpu = document.getElementById("cpu");
-const goalie = document.getElementById("goalie");
+
+const playerGoalie =
+document.getElementById("playerGoalie");
+
+const cpuGoalie =
+document.getElementById("cpuGoalie");
+
 const ball = document.getElementById("ball");
 
-const pScoreText = document.getElementById("pScore");
-const cScoreText = document.getElementById("cScore");
+const staminaBar =
+document.getElementById("stamina");
 
-const staminaBar = document.getElementById("stamina");
-const powerBar = document.getElementById("power");
+const powerBar =
+document.getElementById("power");
 
-const winnerScreen = document.getElementById("winner");
-const winnerText = document.getElementById("winnerText");
+const playerScoreText =
+document.getElementById("playerScore");
 
-const timerText = document.getElementById("time");
+const cpuScoreText =
+document.getElementById("cpuScore");
 
-/* VARIABLES */
+const timerText =
+document.getElementById("time");
 
-let pScore = 0;
-let cScore = 0;
+const winnerScreen =
+document.getElementById("winner");
 
-let playerX = 120;
+const winnerText =
+document.getElementById("winnerText");
+
+/* =========================
+   GAME VARIABLES
+========================= */
+
+const keys = {};
+
+let playerScore = 0;
+let cpuScore = 0;
+
+let gameEnded = false;
+
+/* PLAYER */
+
+let playerX = 150;
 let playerY = innerHeight/2;
 
-let cpuX = innerWidth - 200;
+let playerVX = 0;
+let playerVY = 0;
+
+/* CPU */
+
+let cpuX = innerWidth - 220;
 let cpuY = innerHeight/2;
 
-let goalieX = innerWidth - 80;
-let goalieY = innerHeight/2;
+let cpuVX = 0;
+let cpuVY = 0;
+
+/* GOALIES */
+
+let playerGoalieY =
+innerHeight/2;
+
+let cpuGoalieY =
+innerHeight/2;
+
+/* BALL */
 
 let ballX = innerWidth/2;
 let ballY = innerHeight/2;
@@ -357,218 +488,464 @@ let ballY = innerHeight/2;
 let ballVX = 0;
 let ballVY = 0;
 
+/* PLAYER SYSTEMS */
+
 let stamina = 100;
-let shotPower = 0;
+let power = 0;
 
-let timeLeft = 90;
+let exhausted = false;
+let exhaustTimer = 0;
 
-const keys = {};
+/* TIMER */
 
-/* INPUT */
+let timeLeft = 180;
 
-document.addEventListener("keydown", e=>{
+/* =========================
+   INPUT
+========================= */
+
+document.addEventListener("keydown",e=>{
+
     keys[e.key.toLowerCase()] = true;
+
 });
 
-document.addEventListener("keyup", e=>{
+document.addEventListener("keyup",e=>{
+
     keys[e.key.toLowerCase()] = false;
+
 });
 
-/* PLAYER */
+/* =========================
+   PLAYER MOVEMENT
+========================= */
 
 function movePlayer(){
 
-    let speed = 6;
+    let acceleration = 0.65;
+    let friction = 0.88;
+    let maxSpeed = 5.2;
 
-    if(keys["shift"] && stamina > 0){
-        speed = 11;
-        stamina -= 0.8;
+    /* SPRINT */
+
+    if(keys["shift"] && stamina > 0 && !exhausted){
+
+        maxSpeed = 7;
+
+        stamina -= 1.4;
+
+        friction = 0.91;
+
     }else{
-        stamina += 0.4;
+
+        stamina += 0.28;
     }
 
-    stamina = Math.max(0,Math.min(100,stamina));
+    /* EXHAUSTION */
 
-    staminaBar.style.width = stamina + "%";
+    if(stamina <= 0){
 
-    if(keys["w"]) playerY -= speed;
-    if(keys["s"]) playerY += speed;
-    if(keys["a"]) playerX -= speed;
-    if(keys["d"]) playerX += speed;
+        stamina = 0;
 
-    playerX = Math.max(0,Math.min(innerWidth-80,playerX));
-    playerY = Math.max(0,Math.min(innerHeight-80,playerY));
+        exhausted = true;
 
-    player.style.left = playerX + "px";
-    player.style.top = playerY + "px";
+        exhaustTimer = 120;
+    }
+
+    if(exhausted){
+
+        maxSpeed = 3.5;
+
+        exhaustTimer--;
+
+        if(exhaustTimer <= 0){
+
+            exhausted = false;
+        }
+    }
+
+    stamina =
+    Math.max(0,Math.min(100,stamina));
+
+    staminaBar.style.width =
+    stamina + "%";
+
+    /* MOVEMENT */
+
+    if(keys["w"]) playerVY -= acceleration;
+    if(keys["s"]) playerVY += acceleration;
+
+    if(keys["a"]) playerVX -= acceleration;
+    if(keys["d"]) playerVX += acceleration;
+
+    /* LIMIT */
+
+    playerVX =
+    Math.max(-maxSpeed,
+    Math.min(maxSpeed,playerVX));
+
+    playerVY =
+    Math.max(-maxSpeed,
+    Math.min(maxSpeed,playerVY));
+
+    /* APPLY */
+
+    playerX += playerVX;
+    playerY += playerVY;
+
+    /* FRICTION */
+
+    playerVX *= friction;
+    playerVY *= friction;
+
+    /* WALLS */
+
+    playerX =
+    Math.max(0,
+    Math.min(innerWidth-82,playerX));
+
+    playerY =
+    Math.max(0,
+    Math.min(innerHeight-82,playerY));
+
+    /* VISUAL */
+
+    player.style.left =
+    playerX + "px";
+
+    player.style.top =
+    playerY + "px";
+
+    player.style.transform =
+    `rotate(${playerVX*2.4}deg)`;
 
     /* POWER SHOT */
 
     if(keys[" "]){
-        shotPower += 2;
-        shotPower = Math.min(100,shotPower);
+
+        power += 1.8;
+
+        power =
+        Math.min(100,power);
+
     }else{
-        shotPower -= 3;
-        shotPower = Math.max(0,shotPower);
+
+        power -= 2.4;
+
+        power =
+        Math.max(0,power);
     }
 
-    powerBar.style.width = shotPower + "%";
+    powerBar.style.width =
+    power + "%";
+
 }
 
-/* CPU */
+/* =========================
+   CPU AI
+========================= */
 
 function moveCPU(){
 
-    cpuX += (ballX - cpuX) * 0.018;
-    cpuY += (ballY - cpuY) * 0.018;
+    let targetX = ballX;
+    let targetY = ballY;
 
-    cpu.style.left = cpuX + "px";
-    cpu.style.top = cpuY + "px";
+    /* DEFENSE */
+
+    if(ballX < innerWidth/2){
+
+        targetX =
+        innerWidth - 320;
+    }
+
+    cpuVX +=
+    (targetX - cpuX) * 0.0008;
+
+    cpuVY +=
+    (targetY - cpuY) * 0.0008;
+
+    cpuVX *= 0.94;
+    cpuVY *= 0.94;
+
+    cpuX += cpuVX;
+    cpuY += cpuVY;
+
+    cpu.style.left =
+    cpuX + "px";
+
+    cpu.style.top =
+    cpuY + "px";
+
+    cpu.style.transform =
+    `rotate(${cpuVX*2.4}deg)`;
+
 }
 
-/* GOALIE */
+/* =========================
+   GOALIES
+========================= */
 
-function moveGoalie(){
+function moveGoalies(){
 
-    goalieY += (ballY - goalieY) * 0.05;
+    playerGoalieY +=
+    (ballY - playerGoalieY) * 0.05;
 
-    goalie.style.left = goalieX + "px";
-    goalie.style.top = goalieY + "px";
+    cpuGoalieY +=
+    (ballY - cpuGoalieY) * 0.05;
+
+    playerGoalie.style.left =
+    "65px";
+
+    playerGoalie.style.top =
+    playerGoalieY + "px";
+
+    cpuGoalie.style.left =
+    (innerWidth-105) + "px";
+
+    cpuGoalie.style.top =
+    cpuGoalieY + "px";
+
 }
 
-/* BALL */
+/* =========================
+   BALL
+========================= */
 
 function updateBall(){
 
     ballX += ballVX;
     ballY += ballVY;
 
+    /* FRICTION */
+
     ballVX *= 0.988;
     ballVY *= 0.988;
 
-    if(ballY <= 0 || ballY >= innerHeight-45){
+    /* WALLS */
+
+    if(ballY <= 0 ||
+       ballY >= innerHeight-48){
+
         ballVY *= -1;
     }
 
-    collide(playerX,playerY,true);
-    collide(cpuX,cpuY,false);
-    goalieBlock();
+    /* COLLISION */
+
+    collidePlayer(
+        playerX,
+        playerY,
+        true
+    );
+
+    collidePlayer(
+        cpuX,
+        cpuY,
+        false
+    );
+
+    collideGoalie(
+        65,
+        playerGoalieY
+    );
+
+    collideGoalie(
+        innerWidth-105,
+        cpuGoalieY
+    );
+
+    /* GOALS */
 
     if(ballX <= 0){
-        cScore++;
-        cScoreText.textContent = cScore;
-        flash("#ff4d4d");
-        reset();
+
+        cpuScore++;
+
+        cpuScoreText.textContent =
+        cpuScore;
+
+        goalExplosion();
+
+        resetField();
     }
 
-    if(ballX >= innerWidth-45){
-        pScore++;
-        pScoreText.textContent = pScore;
-        flash("#4dff88");
-        createParticles(ballX,ballY);
-        reset();
+    if(ballX >= innerWidth-48){
+
+        playerScore++;
+
+        playerScoreText.textContent =
+        playerScore;
+
+        goalExplosion();
+
+        resetField();
     }
 
-    ball.style.left = ballX + "px";
-    ball.style.top = ballY + "px";
+    /* VISUAL */
+
+    ball.style.left =
+    ballX + "px";
+
+    ball.style.top =
+    ballY + "px";
+
+    ball.style.transform =
+    `rotate(${ballX+ballY}deg)`;
+
 }
 
-/* COLLISION */
+/* =========================
+   COLLISION
+========================= */
 
-function collide(x,y,isPlayer){
+function collidePlayer(x,y,isPlayer){
 
-    const dx = (ballX+22) - (x+40);
-    const dy = (ballY+22) - (y+40);
+    const dx =
+    (ballX+24) - (x+41);
 
-    const dist = Math.hypot(dx,dy);
+    const dy =
+    (ballY+24) - (y+41);
 
-    if(dist < 65){
+    const dist =
+    Math.hypot(dx,dy);
 
-        const angle = Math.atan2(dy,dx);
+    if(dist < 68){
 
-        let power = isPlayer ? 10 + (shotPower/5) : 10;
+        const angle =
+        Math.atan2(dy,dx);
 
-        ballVX = Math.cos(angle) * power;
-        ballVY = Math.sin(angle) * power;
+        const strength =
+        isPlayer
+        ? 10 + (power/5)
+        : 10;
 
-        createParticles(ballX,ballY);
+        ballVX =
+        Math.cos(angle) * strength;
+
+        ballVY =
+        Math.sin(angle) * strength;
+
+        spawnParticles(
+            ballX,
+            ballY
+        );
     }
 }
 
-/* GOALIE BLOCK */
+/* =========================
+   GOALIE COLLISION
+========================= */
 
-function goalieBlock(){
+function collideGoalie(x,y){
 
-    const dx = (ballX+22) - (goalieX+32);
-    const dy = (ballY+22) - (goalieY+32);
+    const dx =
+    (ballX+24) - (x+35);
 
-    const dist = Math.hypot(dx,dy);
+    const dy =
+    (ballY+24) - (y+35);
 
-    if(dist < 55){
+    const dist =
+    Math.hypot(dx,dy);
+
+    if(dist < 58){
 
         ballVX *= -1.2;
         ballVY *= 1.1;
 
-        createParticles(ballX,ballY);
+        spawnParticles(
+            ballX,
+            ballY
+        );
     }
 }
 
-/* EFFECTS */
+/* =========================
+   PARTICLES
+========================= */
 
-function flash(color){
+function spawnParticles(x,y){
 
-    document.body.style.background = color;
+    for(let i=0;i<14;i++){
 
-    setTimeout(()=>{
-        document.body.style.background = "#000";
-    },150);
-}
+        const p =
+        document.createElement("div");
 
-function createParticles(x,y){
-
-    for(let i=0;i<12;i++){
-
-        const p = document.createElement("div");
         p.classList.add("particle");
 
-        p.style.left = x + "px";
-        p.style.top = y + "px";
+        p.style.left =
+        x + "px";
+
+        p.style.top =
+        y + "px";
 
         document.body.appendChild(p);
 
-        const angle = Math.random()*Math.PI*2;
-        const speed = Math.random()*6;
+        const angle =
+        Math.random()*Math.PI*2;
+
+        const speed =
+        Math.random()*7;
 
         let px = x;
         let py = y;
 
-        const interval = setInterval(()=>{
+        const interval =
+        setInterval(()=>{
 
-            px += Math.cos(angle)*speed;
-            py += Math.sin(angle)*speed;
+            px +=
+            Math.cos(angle)*speed;
 
-            p.style.left = px + "px";
-            p.style.top = py + "px";
+            py +=
+            Math.sin(angle)*speed;
+
+            p.style.left =
+            px + "px";
+
+            p.style.top =
+            py + "px";
 
             p.style.opacity -= 0.04;
 
         },16);
 
         setTimeout(()=>{
+
             clearInterval(interval);
+
             p.remove();
+
         },400);
     }
 }
 
-/* RESET */
+/* =========================
+   GOAL EFFECT
+========================= */
 
-function reset(){
+function goalExplosion(){
 
-    playerX = 120;
+    document.body.style.background =
+    "white";
+
+    setTimeout(()=>{
+
+        document.body.style.background =
+        "#0b0b0b";
+
+    },120);
+
+    spawnParticles(ballX,ballY);
+
+}
+
+/* =========================
+   RESET
+========================= */
+
+function resetField(){
+
+    playerX = 150;
     playerY = innerHeight/2;
 
-    cpuX = innerWidth - 200;
+    cpuX = innerWidth-220;
     cpuY = innerHeight/2;
 
     ballX = innerWidth/2;
@@ -576,16 +953,23 @@ function reset(){
 
     ballVX = 0;
     ballVY = 0;
+
 }
 
-/* TIMER */
+/* =========================
+   TIMER
+========================= */
 
 setInterval(()=>{
+
+    if(gameEnded) return;
 
     if(timeLeft > 0){
 
         timeLeft--;
-        timerText.textContent = timeLeft;
+
+        timerText.textContent =
+        timeLeft;
 
     }else{
 
@@ -594,41 +978,66 @@ setInterval(()=>{
 
 },1000);
 
-/* END */
+/* =========================
+   END GAME
+========================= */
 
 function endGame(){
 
-    winnerScreen.style.display = "flex";
+    gameEnded = true;
 
-    if(pScore > cScore){
-        winnerText.textContent = "YOU WIN!";
-    }else if(cScore > pScore){
-        winnerText.textContent = "CPU WINS!";
+    winnerScreen.style.display =
+    "flex";
+
+    if(playerScore > cpuScore){
+
+        winnerText.textContent =
+        "YOU WIN!";
+
+    }else if(cpuScore > playerScore){
+
+        winnerText.textContent =
+        "CPU WINS!";
+
     }else{
-        winnerText.textContent = "DRAW!";
+
+        winnerText.textContent =
+        "DRAW!";
     }
 }
 
-/* RESTART */
+/* =========================
+   RESTART
+========================= */
 
 function restartGame(){
 
     location.reload();
+
 }
 
-/* LOOP */
+/* =========================
+   LOOP
+========================= */
 
-function loop(){
+function gameLoop(){
 
-    movePlayer();
-    moveCPU();
-    moveGoalie();
-    updateBall();
+    if(!gameEnded){
 
-    requestAnimationFrame(loop);
+        movePlayer();
+
+        moveCPU();
+
+        moveGoalies();
+
+        updateBall();
+    }
+
+    requestAnimationFrame(gameLoop);
+
 }
 
-loop();
+gameLoop();
 
 </script>
 
