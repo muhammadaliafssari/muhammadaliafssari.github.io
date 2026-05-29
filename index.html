@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Next Gen Soccer</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Next Gen Soccer Ultimate</title>
 
 <style>
 
@@ -255,23 +255,6 @@ body{
     font-size:18px;
 }
 
-/* MINIMAP */
-
-.minimap{
-    position:absolute;
-    right:20px;
-    bottom:20px;
-
-    width:220px;
-    height:120px;
-
-    border:2px solid white;
-
-    background:rgba(0,0,0,0.4);
-
-    border-radius:12px;
-}
-
 /* WIN */
 
 #winner{
@@ -311,12 +294,6 @@ body{
     font-size:25px;
 
     cursor:pointer;
-
-    transition:0.2s;
-}
-
-#winner button:hover{
-    transform:scale(1.1);
 }
 
 /* PARTICLES */
@@ -334,6 +311,17 @@ body{
     pointer-events:none;
 }
 
+/* TRAIL */
+
+.trail{
+    position:absolute;
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    pointer-events:none;
+    opacity:0.5;
+}
+
 </style>
 </head>
 
@@ -341,7 +329,6 @@ body{
 
 <div id="game">
 
-    <!-- FIELD -->
     <div class="line center-line"></div>
 
     <div class="center-circle"></div>
@@ -352,51 +339,37 @@ body{
     <div class="goal left"></div>
     <div class="goal right"></div>
 
-    <!-- HUD -->
     <div class="hud">
         <div>PLAYER <span id="playerScore">0</span></div>
         <div>CPU <span id="cpuScore">0</span></div>
     </div>
 
-    <!-- STAMINA -->
     <div class="stamina-box">
         <div class="stamina" id="stamina"></div>
     </div>
 
-    <!-- POWER -->
     <div class="power-box">
         <div class="power" id="power"></div>
     </div>
 
-    <!-- TIMER -->
     <div class="timer">
         ⏱ <span id="time">180</span>
     </div>
 
-    <!-- PLAYERS -->
     <div class="player" id="player"></div>
-
     <div class="cpu" id="cpu"></div>
 
-    <!-- GOALIES -->
     <div class="player-goalie" id="playerGoalie"></div>
-
     <div class="cpu-goalie" id="cpuGoalie"></div>
 
-    <!-- BALL -->
     <div class="ball" id="ball"></div>
 
-    <!-- CONTROLS -->
     <div class="controls">
         W A S D = Move<br>
         SHIFT = Sprint<br>
         SPACE = Charge Shot
     </div>
 
-    <!-- MINIMAP -->
-    <div class="minimap"></div>
-
-    <!-- WIN -->
     <div id="winner">
         <h1 id="winnerText"></h1>
 
@@ -409,9 +382,7 @@ body{
 
 <script>
 
-/* =========================
-   ELEMENTS
-========================= */
+/* ELEMENTS */
 
 const player = document.getElementById("player");
 const cpu = document.getElementById("cpu");
@@ -445,9 +416,10 @@ document.getElementById("winner");
 const winnerText =
 document.getElementById("winnerText");
 
-/* =========================
-   GAME VARIABLES
-========================= */
+const game =
+document.getElementById("game");
+
+/* VARIABLES */
 
 const keys = {};
 
@@ -488,7 +460,7 @@ let ballY = innerHeight/2;
 let ballVX = 0;
 let ballVY = 0;
 
-/* PLAYER SYSTEMS */
+/* SYSTEMS */
 
 let stamina = 100;
 let power = 0;
@@ -496,13 +468,19 @@ let power = 0;
 let exhausted = false;
 let exhaustTimer = 0;
 
-/* TIMER */
+let shootCooldown = 0;
 
 let timeLeft = 180;
 
-/* =========================
-   INPUT
-========================= */
+/* GOAL AREA */
+
+const goalTop =
+innerHeight/2 - 170;
+
+const goalBottom =
+innerHeight/2 + 170;
+
+/* INPUT */
 
 document.addEventListener("keydown",e=>{
 
@@ -516,32 +494,30 @@ document.addEventListener("keyup",e=>{
 
 });
 
-/* =========================
-   PLAYER MOVEMENT
-========================= */
+/* PLAYER */
 
 function movePlayer(){
 
-    let acceleration = 0.65;
+    let acceleration = 0.55;
     let friction = 0.88;
-    let maxSpeed = 5.2;
-
-    /* SPRINT */
+    let maxSpeed = 5;
 
     if(keys["shift"] && stamina > 0 && !exhausted){
 
-        maxSpeed = 7;
+        maxSpeed = 6.5;
 
-        stamina -= 1.4;
+        stamina -= 1.1;
 
-        friction = 0.91;
+        createTrail(
+            playerX+20,
+            playerY+20,
+            "#4dabf7"
+        );
 
     }else{
 
-        stamina += 0.28;
+        stamina += 0.35;
     }
-
-    /* EXHAUSTION */
 
     if(stamina <= 0){
 
@@ -554,7 +530,7 @@ function movePlayer(){
 
     if(exhausted){
 
-        maxSpeed = 3.5;
+        maxSpeed = 3.4;
 
         exhaustTimer--;
 
@@ -570,15 +546,11 @@ function movePlayer(){
     staminaBar.style.width =
     stamina + "%";
 
-    /* MOVEMENT */
-
     if(keys["w"]) playerVY -= acceleration;
     if(keys["s"]) playerVY += acceleration;
 
     if(keys["a"]) playerVX -= acceleration;
     if(keys["d"]) playerVX += acceleration;
-
-    /* LIMIT */
 
     playerVX =
     Math.max(-maxSpeed,
@@ -588,17 +560,11 @@ function movePlayer(){
     Math.max(-maxSpeed,
     Math.min(maxSpeed,playerVY));
 
-    /* APPLY */
-
     playerX += playerVX;
     playerY += playerVY;
 
-    /* FRICTION */
-
     playerVX *= friction;
     playerVY *= friction;
-
-    /* WALLS */
 
     playerX =
     Math.max(0,
@@ -608,8 +574,6 @@ function movePlayer(){
     Math.max(0,
     Math.min(innerHeight-82,playerY));
 
-    /* VISUAL */
-
     player.style.left =
     playerX + "px";
 
@@ -617,9 +581,7 @@ function movePlayer(){
     playerY + "px";
 
     player.style.transform =
-    `rotate(${playerVX*2.4}deg)`;
-
-    /* POWER SHOT */
+    `rotate(${playerVX*4}deg)`;
 
     if(keys[" "]){
 
@@ -630,7 +592,7 @@ function movePlayer(){
 
     }else{
 
-        power -= 2.4;
+        power -= 2.5;
 
         power =
         Math.max(0,power);
@@ -639,33 +601,53 @@ function movePlayer(){
     powerBar.style.width =
     power + "%";
 
+    if(shootCooldown > 0)
+    shootCooldown--;
 }
 
-/* =========================
-   CPU AI
-========================= */
+/* CPU */
 
 function moveCPU(){
 
-    let targetX = ballX;
-    let targetY = ballY;
+    let targetX;
+    let targetY;
 
-    /* DEFENSE */
+    const attacking =
+    ballX > innerWidth/2;
 
-    if(ballX < innerWidth/2){
+    if(attacking){
+
+        targetX = ballX;
+        targetY = ballY;
+
+    }else{
 
         targetX =
         innerWidth - 320;
+
+        targetY =
+        innerHeight/2 +
+        Math.sin(Date.now()*0.002)*120;
     }
 
     cpuVX +=
-    (targetX - cpuX) * 0.0008;
+    (targetX - cpuX) * 0.0012;
 
     cpuVY +=
-    (targetY - cpuY) * 0.0008;
+    (targetY - cpuY) * 0.0012;
 
-    cpuVX *= 0.94;
-    cpuVY *= 0.94;
+    const maxSpeed = 5;
+
+    cpuVX =
+    Math.max(-maxSpeed,
+    Math.min(maxSpeed,cpuVX));
+
+    cpuVY =
+    Math.max(-maxSpeed,
+    Math.min(maxSpeed,cpuVY));
+
+    cpuVX *= 0.93;
+    cpuVY *= 0.93;
 
     cpuX += cpuVX;
     cpuY += cpuVY;
@@ -677,13 +659,10 @@ function moveCPU(){
     cpuY + "px";
 
     cpu.style.transform =
-    `rotate(${cpuVX*2.4}deg)`;
-
+    `rotate(${cpuVX*4}deg)`;
 }
 
-/* =========================
-   GOALIES
-========================= */
+/* GOALIES */
 
 function moveGoalies(){
 
@@ -692,6 +671,20 @@ function moveGoalies(){
 
     cpuGoalieY +=
     (ballY - cpuGoalieY) * 0.05;
+
+    playerGoalieY =
+    Math.max(
+        goalTop,
+        Math.min(goalBottom-70,
+        playerGoalieY)
+    );
+
+    cpuGoalieY =
+    Math.max(
+        goalTop,
+        Math.min(goalBottom-70,
+        cpuGoalieY)
+    );
 
     playerGoalie.style.left =
     "65px";
@@ -704,32 +697,29 @@ function moveGoalies(){
 
     cpuGoalie.style.top =
     cpuGoalieY + "px";
-
 }
 
-/* =========================
-   BALL
-========================= */
+/* BALL */
 
 function updateBall(){
 
     ballX += ballVX;
     ballY += ballVY;
 
-    /* FRICTION */
+    ballVX *= 0.982;
+    ballVY *= 0.982;
 
-    ballVX *= 0.988;
-    ballVY *= 0.988;
+    if(Math.abs(ballVX) < 0.05)
+    ballVX = 0;
 
-    /* WALLS */
+    if(Math.abs(ballVY) < 0.05)
+    ballVY = 0;
 
     if(ballY <= 0 ||
        ballY >= innerHeight-48){
 
-        ballVY *= -1;
+        ballVY *= -0.85;
     }
-
-    /* COLLISION */
 
     collidePlayer(
         playerX,
@@ -753,9 +743,13 @@ function updateBall(){
         cpuGoalieY
     );
 
-    /* GOALS */
+    /* LEFT GOAL */
 
-    if(ballX <= 0){
+    if(
+        ballX <= 0 &&
+        ballY > goalTop &&
+        ballY < goalBottom
+    ){
 
         cpuScore++;
 
@@ -767,7 +761,13 @@ function updateBall(){
         resetField();
     }
 
-    if(ballX >= innerWidth-48){
+    /* RIGHT GOAL */
+
+    if(
+        ballX >= innerWidth-48 &&
+        ballY > goalTop &&
+        ballY < goalBottom
+    ){
 
         playerScore++;
 
@@ -779,7 +779,11 @@ function updateBall(){
         resetField();
     }
 
-    /* VISUAL */
+    if(playerScore >= 5 ||
+       cpuScore >= 5){
+
+        endGame();
+    }
 
     ball.style.left =
     ballX + "px";
@@ -789,12 +793,9 @@ function updateBall(){
 
     ball.style.transform =
     `rotate(${ballX+ballY}deg)`;
-
 }
 
-/* =========================
-   COLLISION
-========================= */
+/* COLLISION */
 
 function collidePlayer(x,y,isPlayer){
 
@@ -807,7 +808,7 @@ function collidePlayer(x,y,isPlayer){
     const dist =
     Math.hypot(dx,dy);
 
-    if(dist < 68){
+    if(dist < 68 && shootCooldown <= 0){
 
         const angle =
         Math.atan2(dy,dx);
@@ -823,6 +824,13 @@ function collidePlayer(x,y,isPlayer){
         ballVY =
         Math.sin(angle) * strength;
 
+        ballVY +=
+        playerVX * 0.7;
+
+        shootCooldown = 14;
+
+        shakeScreen(8);
+
         spawnParticles(
             ballX,
             ballY
@@ -830,9 +838,7 @@ function collidePlayer(x,y,isPlayer){
     }
 }
 
-/* =========================
-   GOALIE COLLISION
-========================= */
+/* GOALIE COLLISION */
 
 function collideGoalie(x,y){
 
@@ -857,9 +863,7 @@ function collideGoalie(x,y){
     }
 }
 
-/* =========================
-   PARTICLES
-========================= */
+/* PARTICLES */
 
 function spawnParticles(x,y){
 
@@ -916,9 +920,72 @@ function spawnParticles(x,y){
     }
 }
 
-/* =========================
-   GOAL EFFECT
-========================= */
+/* TRAILS */
+
+function createTrail(x,y,color){
+
+    const t =
+    document.createElement("div");
+
+    t.className = "trail";
+
+    t.style.left = x+"px";
+    t.style.top = y+"px";
+
+    t.style.background = color;
+
+    document.body.appendChild(t);
+
+    let opacity = 0.5;
+
+    const fade = setInterval(()=>{
+
+        opacity -= 0.04;
+
+        t.style.opacity = opacity;
+
+        if(opacity <= 0){
+
+            clearInterval(fade);
+
+            t.remove();
+        }
+
+    },16);
+}
+
+/* SHAKE */
+
+function shakeScreen(power){
+
+    let shakes = 8;
+
+    const interval =
+    setInterval(()=>{
+
+        const x =
+        (Math.random()-0.5)*power;
+
+        const y =
+        (Math.random()-0.5)*power;
+
+        game.style.transform =
+        `translate(${x}px,${y}px)`;
+
+        shakes--;
+
+        if(shakes <= 0){
+
+            clearInterval(interval);
+
+            game.style.transform =
+            "translate(0,0)";
+        }
+
+    },16);
+}
+
+/* GOAL EFFECT */
 
 function goalExplosion(){
 
@@ -933,12 +1000,9 @@ function goalExplosion(){
     },120);
 
     spawnParticles(ballX,ballY);
-
 }
 
-/* =========================
-   RESET
-========================= */
+/* RESET */
 
 function resetField(){
 
@@ -953,12 +1017,9 @@ function resetField(){
 
     ballVX = 0;
     ballVY = 0;
-
 }
 
-/* =========================
-   TIMER
-========================= */
+/* TIMER */
 
 setInterval(()=>{
 
@@ -978,9 +1039,7 @@ setInterval(()=>{
 
 },1000);
 
-/* =========================
-   END GAME
-========================= */
+/* END */
 
 function endGame(){
 
@@ -1006,19 +1065,14 @@ function endGame(){
     }
 }
 
-/* =========================
-   RESTART
-========================= */
+/* RESTART */
 
 function restartGame(){
 
     location.reload();
-
 }
 
-/* =========================
-   LOOP
-========================= */
+/* LOOP */
 
 function gameLoop(){
 
@@ -1034,7 +1088,6 @@ function gameLoop(){
     }
 
     requestAnimationFrame(gameLoop);
-
 }
 
 gameLoop();
