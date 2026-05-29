@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Next Gen Soccer Ultimate</title>
 
 <style>
@@ -35,6 +35,22 @@ body{
         #2ca84c 120px,
         #2ca84c 240px
     );
+}
+
+/* OUTER BORDER */
+
+#game::after{
+    content:"";
+
+    position:absolute;
+    inset:0;
+
+    border:10px solid white;
+
+    pointer-events:none;
+
+    box-shadow:
+    inset 0 0 25px rgba(255,255,255,0.35);
 }
 
 /* FIELD */
@@ -255,7 +271,7 @@ body{
     font-size:18px;
 }
 
-/* WIN */
+/* WIN SCREEN */
 
 #winner{
     position:absolute;
@@ -311,7 +327,7 @@ body{
     pointer-events:none;
 }
 
-/* TRAIL */
+/* TRAILS */
 
 .trail{
     position:absolute;
@@ -367,7 +383,7 @@ body{
     <div class="controls">
         W A S D = Move<br>
         SHIFT = Sprint<br>
-        SPACE = Charge Shot
+        SPACE = Power Shot
     </div>
 
     <div id="winner">
@@ -567,12 +583,12 @@ function movePlayer(){
     playerVY *= friction;
 
     playerX =
-    Math.max(0,
-    Math.min(innerWidth-82,playerX));
+    Math.max(10,
+    Math.min(innerWidth-92,playerX));
 
     playerY =
-    Math.max(0,
-    Math.min(innerHeight-82,playerY));
+    Math.max(10,
+    Math.min(innerHeight-92,playerY));
 
     player.style.left =
     playerX + "px";
@@ -657,9 +673,6 @@ function moveCPU(){
 
     cpu.style.top =
     cpuY + "px";
-
-    cpu.style.transform =
-    `rotate(${cpuVX*4}deg)`;
 }
 
 /* GOALIES */
@@ -715,10 +728,46 @@ function updateBall(){
     if(Math.abs(ballVY) < 0.05)
     ballVY = 0;
 
-    if(ballY <= 0 ||
-       ballY >= innerHeight-48){
+    /* TOP WALL */
+
+    if(ballY <= 0){
+
+        ballY = 0;
 
         ballVY *= -0.85;
+    }
+
+    /* BOTTOM WALL */
+
+    if(ballY >= innerHeight-48){
+
+        ballY = innerHeight-48;
+
+        ballVY *= -0.85;
+    }
+
+    /* LEFT WALL */
+
+    if(
+        ballX <= 0 &&
+        !(ballY > goalTop && ballY < goalBottom)
+    ){
+
+        ballX = 0;
+
+        ballVX *= -0.9;
+    }
+
+    /* RIGHT WALL */
+
+    if(
+        ballX >= innerWidth-48 &&
+        !(ballY > goalTop && ballY < goalBottom)
+    ){
+
+        ballX = innerWidth-48;
+
+        ballVX *= -0.9;
     }
 
     collidePlayer(
@@ -743,7 +792,7 @@ function updateBall(){
         cpuGoalieY
     );
 
-    /* LEFT GOAL */
+    /* GOALS */
 
     if(
         ballX <= 0 &&
@@ -760,8 +809,6 @@ function updateBall(){
 
         resetField();
     }
-
-    /* RIGHT GOAL */
 
     if(
         ballX >= innerWidth-48 &&
@@ -920,7 +967,7 @@ function spawnParticles(x,y){
     }
 }
 
-/* TRAILS */
+/* TRAIL */
 
 function createTrail(x,y,color){
 
@@ -954,7 +1001,7 @@ function createTrail(x,y,color){
     },16);
 }
 
-/* SHAKE */
+/* SCREEN SHAKE */
 
 function shakeScreen(power){
 
@@ -1039,7 +1086,7 @@ setInterval(()=>{
 
 },1000);
 
-/* END */
+/* END GAME */
 
 function endGame(){
 
@@ -1072,7 +1119,7 @@ function restartGame(){
     location.reload();
 }
 
-/* LOOP */
+/* GAME LOOP */
 
 function gameLoop(){
 
