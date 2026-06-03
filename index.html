@@ -78,17 +78,20 @@ function finish(){
 }
 
 function collide(x,y,r,str){
- const dx=(bx+21)-(x+r/2), dy=(by+21)-(y+r/2);
- const d=Math.hypot(dx,dy);
- const min=r/2+21;
- if(d<min){
-   const a=Math.atan2(dy,dx);
-   const overlap=min-d;
-   bx+=Math.cos(a)*overlap;
-   by+=Math.sin(a)*overlap;
-   bvx=Math.cos(a)*str;
-   bvy=Math.sin(a)*str;
- }
+
+    const dx=(bx+21)-(x+r/2);
+    const dy=(by+21)-(y+r/2);
+
+    const d=Math.hypot(dx,dy);
+    const min=r/2+21;
+
+    if(d<min){
+
+        const a=Math.atan2(dy,dx);
+
+        bvx=Math.cos(a)*str;
+        bvy=Math.sin(a)*str;
+    }
 }
 
 function loop(){
