@@ -1,76 +1,62 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Ultimate Soccer Deluxe AI Upgrade</title>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ultimate Soccer Deluxe AI</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{overflow:hidden;background:#111;font-family:Arial}
-#game{position:relative;width:100vw;height:100vh;overflow:hidden;
-background:repeating-linear-gradient(90deg,#1b8a3d 0 120px,#2ca84c 120px 240px)}
-.fieldBorder{position:absolute;inset:8px;border:4px solid #fff}
-.centerLine{position:absolute;left:50%;top:8px;bottom:8px;width:4px;background:#fff}
-.centerCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-width:220px;height:220px;border:4px solid #fff;border-radius:50%}
-.goal{position:absolute;top:50%;transform:translateY(-50%);width:20px;height:180px;background:#fff}
-.leftGoal{left:8px}.rightGoal{right:8px}
-.player,.cpu,.goalie,.ball{position:absolute;border-radius:50%}
-.player{width:50px;height:50px;background:#1971c2;border:3px solid #fff}
-.cpu{width:50px;height:50px;background:#e03131;border:3px solid #fff}
-.goalie{width:50px;height:50px;border:3px solid #fff}
-.blueGoalie{background:#7048e8}.redGoalie{background:#f59f00}
-.ball{width:24px;height:24px;background:#fff;border:2px solid #000}
-.hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#fff;font-size:30px;font-weight:bold}
+*{margin:0;box-sizing:border-box}body{overflow:hidden;background:#111}
+#game{position:relative;width:100vw;height:100vh;background:repeating-linear-gradient(90deg,#1b8a3d 0 120px,#2ca84c 120px 240px)}
+.line{position:absolute;background:#fff}.v{left:50%;top:5px;bottom:5px;width:4px}.b{left:5px;right:5px;top:5px;height:4px}.bb{left:5px;right:5px;bottom:5px;height:4px}
+.l{top:5px;bottom:5px;left:5px;width:4px}.r{top:5px;bottom:5px;right:5px;width:4px}
+.c{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:180px;height:180px;border:4px solid #fff;border-radius:50%}
+.goal{position:absolute;width:18px;height:180px;background:#fff;top:50%;transform:translateY(-50%)}
+#lg{left:5px}#rg{right:5px}
+.ent{position:absolute;border-radius:50%}
+.blue{background:#1971c2;border:2px solid #fff}
+.red{background:#e03131;border:2px solid #fff}
+.gk1{background:#7048e8}.gk2{background:#f59f00}
+.ball{background:#fff;border:2px solid #000}
+#hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#fff;font:700 30px Arial}
 </style></head>
-<body>
-<div id=game>
-<div class=fieldBorder></div><div class=centerLine></div><div class=centerCircle></div>
-<div class="goal leftGoal"></div><div class="goal rightGoal"></div>
-<div class=hud>Blue <span id=bs>0</span> - <span id=rs>0</span> Red</div>
-<div id=entities></div></div>
+<body><div id=game>
+<div class="line b"></div><div class="line bb"></div><div class="line l"></div><div class="line r"></div><div class="line v"></div><div class=c></div>
+<div id=lg class=goal></div><div id=rg class=goal></div>
+<div id=hud>Blue <span id=bs>0</span> - <span id=rs>0</span> Red</div>
+<div id=ents></div></div>
 <script>
-const holder=entities,bsE=bs,rsE=rs,W=()=>innerWidth,H=()=>innerHeight;
-let blue=0,red=0,keys={};onkeydown=e=>keys[e.key.toLowerCase()]=1;onkeyup=e=>keys[e.key.toLowerCase()]=0;
-const objs=[];
-function make(c,x,y,r,t){let e=document.createElement("div");e.className=c;holder.appendChild(e);
-let o={e,c,x,y,hx:x,hy:y,vx:0,vy:0,role:r,team:t};objs.push(o);return o;}
-const user=make("player",150,H()/2,"user","b");
-const bdef=make("player",300,H()/2-130,"def","b");
-const bmid=make("player",360,H()/2,"mid","b");
-const bfwd=make("player",300,H()/2+130,"fwd","b");
-const rfwd=make("cpu",W()-220,H()/2,"fwd","r");
-const rmid=make("cpu",W()-360,H()/2-130,"mid","r");
-const rdef=make("cpu",W()-360,H()/2+130,"def","r");
-const lg=make("goalie blueGoalie",60,H()/2,"gk","b");
-const rg=make("goalie redGoalie",W()-110,H()/2,"gk","r");
-let ball=document.createElement("div");ball.className="ball";holder.appendChild(ball);
+const E=document.getElementById("ents"),bs=bs=document.getElementById("bs"),rs=document.getElementById("rs");
+let B=0,R=0,W=()=>innerWidth,H=()=>innerHeight;
+const team=[];
+function add(cls,x,y,s=44){let d=document.createElement("div");d.className="ent "+cls;d.style.width=s+"px";d.style.height=s+"px";E.appendChild(d);let o={d,x,y,vx:0,vy:0,s};team.push(o);return o;}
+let user=add("blue",120,H()/2);
+let bd=add("blue",240,H()/2-120),bm=add("blue",320,H()/2),bf=add("blue",240,H()/2+120);
+let rd=add("red",W()-280,H()/2-120),rm=add("red",W()-360,H()/2),rf=add("red",W()-280,H()/2+120);
+let g1=add("gk1",50,H()/2),g2=add("gk2",W()-90,H()/2);
+let ball=document.createElement("div");ball.className="ent ball";ball.style.width="20px";ball.style.height="20px";E.appendChild(ball);
 let bx=W()/2,by=H()/2,bvx=0,bvy=0;
-function hit(p,pw){let dx=bx-(p.x+25),dy=by-(p.y+25),d=Math.hypot(dx,dy);if(d<50){let a=Math.atan2(dy,dx);bvx=Math.cos(a)*pw;bvy=Math.sin(a)*pw;}}
-function ai(p){
- let tx=p.hx,ty=p.hy;
- if(p.role=="def"){if((p.team=="b"&&bx<W()/2)||(p.team=="r"&&bx>W()/2)){tx=bx+(p.team=="b"?-60:60);ty=by;}}
- if(p.role=="mid"){tx=(p.team=="b"?W()/2-80:W()/2+80);ty=by;}
- if(p.role=="fwd"){tx=bx;ty=by;}
- if(p.role=="gk"){p.y+=(by-25-p.y)*0.12;hit(p,11);return;}
- p.vx+=(tx-p.x)*0.01;p.vy+=(ty-p.y)*0.01;p.vx*=.95;p.vy*=.95;
- p.x+=p.vx;p.y+=p.vy;hit(p,9);
-}
-function reset(){bx=W()/2;by=H()/2;bvx=bvy=0;}
-(function loop(){
-if(keys.w)user.vy-=.35;if(keys.s)user.vy+=.35;if(keys.a)user.vx-=.35;if(keys.d)user.vx+=.35;
+let k={};onkeydown=e=>k[e.key.toLowerCase()]=1;onkeyup=e=>k[e.key.toLowerCase()]=0;
+function kick(p,pow){let dx=bx-(p.x+p.s/2),dy=by-(p.y+p.s/2),d=Math.hypot(dx,dy);if(d<p.s/2+20){let a=Math.atan2(dy,dx);bvx=Math.cos(a)*pow;bvy=Math.sin(a)*pow;}}
+function moveAI(p,tx,ty,spd){p.vx+=(tx-p.x)*spd;p.vy+=(ty-p.y)*spd;p.vx*=.94;p.vy*=.94;p.x+=Math.max(-2.8,Math.min(2.8,p.vx));p.y+=Math.max(-2.8,Math.min(2.8,p.vy));kick(p,8);}
+function reset(){bx=W()/2;by=H()/2;bvx=bvy=0;user.x=120;user.y=H()/2;}
+function loop(){
+if(k.w)user.vy-=.35;if(k.s)user.vy+=.35;if(k.a)user.vx-=.35;if(k.d)user.vx+=.35;
 user.vx*=.92;user.vy*=.92;user.x+=Math.max(-4,Math.min(4,user.vx));user.y+=Math.max(-4,Math.min(4,user.vy));
-[bdef,bmid,bfwd,rfwd,rmid,rdef,lg,rg].forEach(ai);
-if(keys[" "])hit(user,12);hit(user,10);
+moveAI(bd,bx<W()/2?bx-80:180,by,.012);
+moveAI(bm,W()/2-120,by,.012);
+moveAI(bf,bx,by,.015);
+moveAI(rd,bx>W()/2?bx+80:W()-180,by,.012);
+moveAI(rm,W()/2+120,by,.012);
+moveAI(rf,bx,by,.015);
+g1.y+=(by-g1.y)*.1;g2.y+=(by-g2.y)*.1;kick(g1,10);kick(g2,10);
+kick(user,9);
+if(k[" "]){let a=Math.atan2(by-user.y,bx-user.x);bvx=Math.cos(a)*12;bvy=Math.sin(a)*12;}
 bx+=bvx;by+=bvy;bvx*=.985;bvy*=.985;
-let gt=H()/2-140,gb=H()/2+140;
-if(bx<20&&by>gt&&by<gb){red++;rsE.textContent=red;reset();}
-if(bx>W()-44&&by>gt&&by<gb){blue++;bsE.textContent=blue;reset();}
-if(bx<8){bx=8;bvx=Math.abs(bvx)};if(bx>W()-32){bx=W()-32;bvx=-Math.abs(bvx)}
-if(by<8){by=8;bvy=Math.abs(bvy)};if(by>H()-32){by=H()-32;bvy=-Math.abs(bvy)}
-objs.forEach(o=>{o.x=Math.max(8,Math.min(W()-58,o.x));o.y=Math.max(8,Math.min(H()-58,o.y));
-o.e.style.left=o.x+"px";o.e.style.top=o.y+"px";});
+let gt=H()/2-90,gb=H()/2+90;
+if(bx<18&&by>gt&&by<gb){R++;rs.textContent=R;reset();}
+if(bx>W()-38&&by>gt&&by<gb){B++;bs.textContent=B;reset();}
+if(by<5){by=5;bvy=Math.abs(bvy)};if(by>H()-25){by=H()-25;bvy=-Math.abs(bvy)}
+if(bx<5){bx=5;bvx=Math.abs(bvx)};if(bx>W()-25){bx=W()-25;bvx=-Math.abs(bvx)}
+for(let p of team){p.x=Math.max(5,Math.min(W()-p.s-5,p.x));p.y=Math.max(5,Math.min(H()-p.s-5,p.y));
+p.d.style.left=p.x+"px";p.d.style.top=p.y+"px";}
 ball.style.left=bx+"px";ball.style.top=by+"px";
-requestAnimationFrame(loop);
-})();
+requestAnimationFrame(loop);}
+loop();
 </script></body></html>
