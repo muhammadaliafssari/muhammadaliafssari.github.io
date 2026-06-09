@@ -3,16 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Ultimate Soccer Deluxe</title>
+<title>Ultimate Soccer Deluxe AI Upgrade</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{overflow:hidden;background:#111;font-family:Arial,sans-serif}
-#game{
-position:relative;width:100vw;height:100vh;overflow:hidden;
-background:repeating-linear-gradient(90deg,#1b8a3d 0 120px,#2ca84c 120px 240px);
-cursor:none;
-}
-.fieldBorder{position:absolute;inset:8px;border:4px solid #fff;pointer-events:none}
+body{overflow:hidden;background:#111;font-family:Arial}
+#game{position:relative;width:100vw;height:100vh;overflow:hidden;
+background:repeating-linear-gradient(90deg,#1b8a3d 0 120px,#2ca84c 120px 240px)}
+.fieldBorder{position:absolute;inset:8px;border:4px solid #fff}
 .centerLine{position:absolute;left:50%;top:8px;bottom:8px;width:4px;background:#fff}
 .centerCircle{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
 width:220px;height:220px;border:4px solid #fff;border-radius:50%}
@@ -22,210 +19,58 @@ width:220px;height:220px;border:4px solid #fff;border-radius:50%}
 .player{width:50px;height:50px;background:#1971c2;border:3px solid #fff}
 .cpu{width:50px;height:50px;background:#e03131;border:3px solid #fff}
 .goalie{width:50px;height:50px;border:3px solid #fff}
-.blueGoalie{background:#7048e8}
-.redGoalie{background:#f59f00}
+.blueGoalie{background:#7048e8}.redGoalie{background:#f59f00}
 .ball{width:24px;height:24px;background:#fff;border:2px solid #000}
-.hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);
-color:#fff;font-size:30px;font-weight:bold;z-index:5}
-#trail{position:absolute;inset:0;pointer-events:none}
-</style>
-</head>
+.hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#fff;font-size:30px;font-weight:bold}
+</style></head>
 <body>
-<div id="game">
-<canvas id="trail"></canvas>
-<div class="fieldBorder"></div>
-<div class="centerLine"></div>
-<div class="centerCircle"></div>
-<div class="goal leftGoal"></div>
-<div class="goal rightGoal"></div>
-<div class="hud">Blue <span id="bs">0</span> - <span id="rs">0</span> Red</div>
-<div id="entities"></div>
-</div>
-
+<div id=game>
+<div class=fieldBorder></div><div class=centerLine></div><div class=centerCircle></div>
+<div class="goal leftGoal"></div><div class="goal rightGoal"></div>
+<div class=hud>Blue <span id=bs>0</span> - <span id=rs>0</span> Red</div>
+<div id=entities></div></div>
 <script>
-const game=document.getElementById("game");
-const holder=document.getElementById("entities");
-const bs=document.getElementById("bs");
-const rs=document.getElementById("rs");
-
-let blueScore=0,redScore=0;
-
-const W=()=>innerWidth,H=()=>innerHeight;
-
-const players=[];
-function make(type,x,y){
- const e=document.createElement("div");
- e.className=type;
- holder.appendChild(e);
- const obj={type,x,y,vx:0,vy:0,el:e};
- players.push(obj);
- return obj;
-}
-
-const user=make("player",150,H()/2);
-make("player",300,H()/2-120);
-make("player",300,H()/2+120);
-
-make("cpu",W()-220,H()/2);
-make("cpu",W()-380,H()/2-120);
-make("cpu",W()-380,H()/2+120);
-
-const lg=make("goalie blueGoalie",60,H()/2);
-const rg=make("goalie redGoalie",W()-130,H()/2);
-
-const ball=document.createElement("div");
-ball.className="ball";
-holder.appendChild(ball);
-
+const holder=entities,bsE=bs,rsE=rs,W=()=>innerWidth,H=()=>innerHeight;
+let blue=0,red=0,keys={};onkeydown=e=>keys[e.key.toLowerCase()]=1;onkeyup=e=>keys[e.key.toLowerCase()]=0;
+const objs=[];
+function make(c,x,y,r,t){let e=document.createElement("div");e.className=c;holder.appendChild(e);
+let o={e,c,x,y,hx:x,hy:y,vx:0,vy:0,role:r,team:t};objs.push(o);return o;}
+const user=make("player",150,H()/2,"user","b");
+const bdef=make("player",300,H()/2-130,"def","b");
+const bmid=make("player",360,H()/2,"mid","b");
+const bfwd=make("player",300,H()/2+130,"fwd","b");
+const rfwd=make("cpu",W()-220,H()/2,"fwd","r");
+const rmid=make("cpu",W()-360,H()/2-130,"mid","r");
+const rdef=make("cpu",W()-360,H()/2+130,"def","r");
+const lg=make("goalie blueGoalie",60,H()/2,"gk","b");
+const rg=make("goalie redGoalie",W()-110,H()/2,"gk","r");
+let ball=document.createElement("div");ball.className="ball";holder.appendChild(ball);
 let bx=W()/2,by=H()/2,bvx=0,bvy=0;
-
-const keys={};
-onkeydown=e=>keys[e.key.toLowerCase()]=true;
-onkeyup=e=>keys[e.key.toLowerCase()]=false;
-
-function reset(){
- bx=W()/2; by=H()/2; bvx=bvy=0;
- user.x=150; user.y=H()/2;
+function hit(p,pw){let dx=bx-(p.x+25),dy=by-(p.y+25),d=Math.hypot(dx,dy);if(d<50){let a=Math.atan2(dy,dx);bvx=Math.cos(a)*pw;bvy=Math.sin(a)*pw;}}
+function ai(p){
+ let tx=p.hx,ty=p.hy;
+ if(p.role=="def"){if((p.team=="b"&&bx<W()/2)||(p.team=="r"&&bx>W()/2)){tx=bx+(p.team=="b"?-60:60);ty=by;}}
+ if(p.role=="mid"){tx=(p.team=="b"?W()/2-80:W()/2+80);ty=by;}
+ if(p.role=="fwd"){tx=bx;ty=by;}
+ if(p.role=="gk"){p.y+=(by-25-p.y)*0.12;hit(p,11);return;}
+ p.vx+=(tx-p.x)*0.01;p.vy+=(ty-p.y)*0.01;p.vx*=.95;p.vy*=.95;
+ p.x+=p.vx;p.y+=p.vy;hit(p,9);
 }
-
-function collideBall(o,power){
- const ox=o.x+35, oy=o.y+35;
- const dx=(bx+17)-ox;
- const dy=(by+17)-oy;
- const d=Math.hypot(dx,dy);
- if(d<52){
-   const a=Math.atan2(dy,dx);
-   bvx=Math.cos(a)*power;
-   bvy=Math.sin(a)*power;
- }
-}
-
-function entityCollision(a,b){
- const dx=(a.x+35)-(b.x+35);
- const dy=(a.y+35)-(b.y+35);
- const d=Math.hypot(dx,dy);
- if(d<70 && d>0){
-   const push=(70-d)/2;
-   a.x+=dx/d*push;
-   a.y+=dy/d*push;
-   b.x-=dx/d*push;
-   b.y-=dy/d*push;
- }
-}
-
-function update(){
- const speed=0.35;
-
- if(keys["w"]) user.vy-=speed;
- if(keys["s"]) user.vy+=speed;
- if(keys["a"]) user.vx-=speed;
- if(keys["d"]) user.vx+=speed;
-
- user.vx*=0.92; user.vy*=0.92;
- user.vx=Math.max(-4,Math.min(4,user.vx));
- user.vy=Math.max(-4,Math.min(4,user.vy));
-
- user.x+=user.vx; user.y+=user.vy;
-
- for(let i=1;i<=2;i++){
-   const p=players[i];
-   p.vx+=(user.x-p.x)*0.002;
-   p.vy+=(user.y-p.y)*0.002;
-   p.x+=p.vx; p.y+=p.vy;
-   p.vx*=0.95; p.vy*=0.95;
- }
-
- for(let i=3;i<=5;i++){
-   const c=players[i];
-   const dx=bx-c.x, dy=by-c.y;
-   const d=Math.hypot(dx,dy)||1;
-   c.vx+=(dx/d)*0.18;
-   c.vy+=(dy/d)*0.18;
-   c.x+=c.vx; c.y+=c.vy;
-   c.vx*=0.95; c.vy*=0.95;
-   collideBall(c,9);
- }
-
- lg.y += ((by-35)-lg.y)*0.12;
- rg.y += ((by-35)-rg.y)*0.12;
-
- if(keys[" "]){
-   const d=Math.hypot((bx+17)-(user.x+35),(by+17)-(user.y+35));
-   if(d<90){
-      const ang=Math.atan2(by-user.y,bx-user.x);
-      bvx=Math.cos(ang)*12;
-      bvy=Math.sin(ang)*12;
-   }
- }
-
- collideBall(user,10);
- collideBall(lg,11);
- collideBall(rg,11);
-
- bx+=bvx; by+=bvy;
- bvx*=0.985; bvy*=0.985;
-
- if(Math.abs(bvx)<0.05)bvx=0;
- if(Math.abs(bvy)<0.05)bvy=0;
-
- const border=8;
- if(bx<border){bx=border;bvx=Math.abs(bvx)}
- if(by<border){by=border;bvy=Math.abs(bvy)}
- if(bx>W()-42){bx=W()-42;bvx=-Math.abs(bvx)}
- if(by>H()-42){by=H()-42;bvy=-Math.abs(bvy)}
-
- const gt=H()/2-140, gb=H()/2+140;
-
- if(bx<20 && by>gt && by<gb){redScore++;rs.textContent=redScore;reset();}
- if(bx>W()-54 && by>gt && by<gb){blueScore++;bs.textContent=blueScore;reset();}
-
- players.forEach(p=>{
-   p.x=Math.max(8,Math.min(W()-78,p.x));
-   p.y=Math.max(8,Math.min(H()-78,p.y));
- });
- for(let i=0;i<players.length;i++){
-   for(let j=i+1;j<players.length;j++){
-      entityCollision(players[i],players[j]);
-   }
- }
-
- players.forEach(p=>{
-   p.el.style.left=p.x+"px";
-   p.el.style.top=p.y+"px";
- });
-
- ball.style.left=bx+"px";
- ball.style.top=by+"px";
-
- requestAnimationFrame(update);
-}
-update();
-
-const canvas=document.getElementById("trail");
-const ctx=canvas.getContext("2d");
-let trail=[];
-
-function resize(){canvas.width=innerWidth;canvas.height=innerHeight;}
-resize();
-addEventListener("resize",resize);
-
-addEventListener("mousemove",e=>{
- trail.push({x:e.clientX,y:e.clientY,a:1});
-});
-
-function drawTrail(){
- ctx.clearRect(0,0,canvas.width,canvas.height);
- trail.forEach(t=>{
-   ctx.beginPath();
-   ctx.arc(t.x,t.y,8*t.a,0,Math.PI*2);
-   ctx.fillStyle=`rgba(255,255,255,${t.a})`;
-   ctx.fill();
-   t.a-=0.03;
- });
- trail=trail.filter(t=>t.a>0);
- requestAnimationFrame(drawTrail);
-}
-drawTrail();
-</script>
-</body>
-</html>
+function reset(){bx=W()/2;by=H()/2;bvx=bvy=0;}
+(function loop(){
+if(keys.w)user.vy-=.35;if(keys.s)user.vy+=.35;if(keys.a)user.vx-=.35;if(keys.d)user.vx+=.35;
+user.vx*=.92;user.vy*=.92;user.x+=Math.max(-4,Math.min(4,user.vx));user.y+=Math.max(-4,Math.min(4,user.vy));
+[bdef,bmid,bfwd,rfwd,rmid,rdef,lg,rg].forEach(ai);
+if(keys[" "])hit(user,12);hit(user,10);
+bx+=bvx;by+=bvy;bvx*=.985;bvy*=.985;
+let gt=H()/2-140,gb=H()/2+140;
+if(bx<20&&by>gt&&by<gb){red++;rsE.textContent=red;reset();}
+if(bx>W()-44&&by>gt&&by<gb){blue++;bsE.textContent=blue;reset();}
+if(bx<8){bx=8;bvx=Math.abs(bvx)};if(bx>W()-32){bx=W()-32;bvx=-Math.abs(bvx)}
+if(by<8){by=8;bvy=Math.abs(bvy)};if(by>H()-32){by=H()-32;bvy=-Math.abs(bvy)}
+objs.forEach(o=>{o.x=Math.max(8,Math.min(W()-58,o.x));o.y=Math.max(8,Math.min(H()-58,o.y));
+o.e.style.left=o.x+"px";o.e.style.top=o.y+"px";});
+ball.style.left=bx+"px";ball.style.top=by+"px";
+requestAnimationFrame(loop);
+})();
+</script></body></html>
