@@ -1,62 +1,301 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ultimate Soccer Deluxe AI</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Soccer</title>
 <style>
-*{margin:0;box-sizing:border-box}body{overflow:hidden;background:#111}
-#game{position:relative;width:100vw;height:100vh;background:repeating-linear-gradient(90deg,#1b8a3d 0 120px,#2ca84c 120px 240px)}
-.line{position:absolute;background:#fff}.v{left:50%;top:5px;bottom:5px;width:4px}.b{left:5px;right:5px;top:5px;height:4px}.bb{left:5px;right:5px;bottom:5px;height:4px}
-.l{top:5px;bottom:5px;left:5px;width:4px}.r{top:5px;bottom:5px;right:5px;width:4px}
-.c{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:180px;height:180px;border:4px solid #fff;border-radius:50%}
-.goal{position:absolute;width:18px;height:180px;background:#fff;top:50%;transform:translateY(-50%)}
-#lg{left:5px}#rg{right:5px}
-.ent{position:absolute;border-radius:50%}
-.blue{background:#1971c2;border:2px solid #fff}
-.red{background:#e03131;border:2px solid #fff}
-.gk1{background:#7048e8}.gk2{background:#f59f00}
-.ball{background:#fff;border:2px solid #000}
-#hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);color:#fff;font:700 30px Arial}
-</style></head>
-<body><div id=game>
-<div class="line b"></div><div class="line bb"></div><div class="line l"></div><div class="line r"></div><div class="line v"></div><div class=c></div>
-<div id=lg class=goal></div><div id=rg class=goal></div>
-<div id=hud>Blue <span id=bs>0</span> - <span id=rs>0</span> Red</div>
-<div id=ents></div></div>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { overflow: hidden; background: #111; font-family: Arial; }
+
+#game {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: repeating-linear-gradient(90deg, #1b8a3d 0 120px, #2ca84c 120px 240px);
+}
+
+/* Field markings */
+.field-border  { position: absolute; inset: 8px; border: 4px solid #fff; pointer-events: none; }
+.center-line   { position: absolute; left: 50%; top: 8px; bottom: 8px; width: 4px; background: #fff; pointer-events: none; }
+.center-circle { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+                 width: 220px; height: 220px; border: 4px solid #fff; border-radius: 50%; pointer-events: none; }
+.goal          { position: absolute; top: 50%; transform: translateY(-50%); width: 20px; height: 180px; background: #fff; pointer-events: none; }
+.goal-left  { left: 8px; }
+.goal-right { right: 8px; }
+
+/* HUD */
+.hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+       color: #fff; font-size: 30px; font-weight: bold; pointer-events: none; }
+
+/* Entity base */
+.entity { position: absolute; border-radius: 50%; }
+
+.player-blue   { width: 50px; height: 50px; background: #1971c2; border: 3px solid #fff; }
+.player-red    { width: 50px; height: 50px; background: #e03131; border: 3px solid #fff; }
+.goalie-blue   { width: 50px; height: 50px; background: #7048e8; border: 3px solid #fff; }
+.goalie-red    { width: 50px; height: 50px; background: #f59f00; border: 3px solid #fff; }
+.ball          { width: 24px; height: 24px; background: #fff; border: 2px solid #000; }
+
+/* Controls hint */
+.controls-hint {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,0.6); font-size: 13px; pointer-events: none;
+}
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="field-border"></div>
+  <div class="center-line"></div>
+  <div class="center-circle"></div>
+  <div class="goal goal-left"></div>
+  <div class="goal goal-right"></div>
+
+  <div class="hud">Blue <span id="score-blue">0</span> – <span id="score-red">0</span> Red</div>
+  <div class="controls-hint">WASD / Arrow keys to move · SPACE to kick</div>
+
+  <div id="entities"></div>
+</div>
+
 <script>
-const E=document.getElementById("ents"),bs=bs=document.getElementById("bs"),rs=document.getElementById("rs");
-let B=0,R=0,W=()=>innerWidth,H=()=>innerHeight;
-const team=[];
-function add(cls,x,y,s=44){let d=document.createElement("div");d.className="ent "+cls;d.style.width=s+"px";d.style.height=s+"px";E.appendChild(d);let o={d,x,y,vx:0,vy:0,s};team.push(o);return o;}
-let user=add("blue",120,H()/2);
-let bd=add("blue",240,H()/2-120),bm=add("blue",320,H()/2),bf=add("blue",240,H()/2+120);
-let rd=add("red",W()-280,H()/2-120),rm=add("red",W()-360,H()/2),rf=add("red",W()-280,H()/2+120);
-let g1=add("gk1",50,H()/2),g2=add("gk2",W()-90,H()/2);
-let ball=document.createElement("div");ball.className="ent ball";ball.style.width="20px";ball.style.height="20px";E.appendChild(ball);
-let bx=W()/2,by=H()/2,bvx=0,bvy=0;
-let k={};onkeydown=e=>k[e.key.toLowerCase()]=1;onkeyup=e=>k[e.key.toLowerCase()]=0;
-function kick(p,pow){let dx=bx-(p.x+p.s/2),dy=by-(p.y+p.s/2),d=Math.hypot(dx,dy);if(d<p.s/2+20){let a=Math.atan2(dy,dx);bvx=Math.cos(a)*pow;bvy=Math.sin(a)*pow;}}
-function moveAI(p,tx,ty,spd){p.vx+=(tx-p.x)*spd;p.vy+=(ty-p.y)*spd;p.vx*=.94;p.vy*=.94;p.x+=Math.max(-2.8,Math.min(2.8,p.vx));p.y+=Math.max(-2.8,Math.min(2.8,p.vy));kick(p,8);}
-function reset(){bx=W()/2;by=H()/2;bvx=bvy=0;user.x=120;user.y=H()/2;}
-function loop(){
-if(k.w)user.vy-=.35;if(k.s)user.vy+=.35;if(k.a)user.vx-=.35;if(k.d)user.vx+=.35;
-user.vx*=.92;user.vy*=.92;user.x+=Math.max(-4,Math.min(4,user.vx));user.y+=Math.max(-4,Math.min(4,user.vy));
-moveAI(bd,bx<W()/2?bx-80:180,by,.012);
-moveAI(bm,W()/2-120,by,.012);
-moveAI(bf,bx,by,.015);
-moveAI(rd,bx>W()/2?bx+80:W()-180,by,.012);
-moveAI(rm,W()/2+120,by,.012);
-moveAI(rf,bx,by,.015);
-g1.y+=(by-g1.y)*.1;g2.y+=(by-g2.y)*.1;kick(g1,10);kick(g2,10);
-kick(user,9);
-if(k[" "]){let a=Math.atan2(by-user.y,bx-user.x);bvx=Math.cos(a)*12;bvy=Math.sin(a)*12;}
-bx+=bvx;by+=bvy;bvx*=.985;bvy*=.985;
-let gt=H()/2-90,gb=H()/2+90;
-if(bx<18&&by>gt&&by<gb){R++;rs.textContent=R;reset();}
-if(bx>W()-38&&by>gt&&by<gb){B++;bs.textContent=B;reset();}
-if(by<5){by=5;bvy=Math.abs(bvy)};if(by>H()-25){by=H()-25;bvy=-Math.abs(bvy)}
-if(bx<5){bx=5;bvx=Math.abs(bvx)};if(bx>W()-25){bx=W()-25;bvx=-Math.abs(bvx)}
-for(let p of team){p.x=Math.max(5,Math.min(W()-p.s-5,p.x));p.y=Math.max(5,Math.min(H()-p.s-5,p.y));
-p.d.style.left=p.x+"px";p.d.style.top=p.y+"px";}
-ball.style.left=bx+"px";ball.style.top=by+"px";
-requestAnimationFrame(loop);}
-loop();
-</script></body></html>
+// ─── Constants ───────────────────────────────────────────────────────────────
+const GW = () => innerWidth;
+const GH = () => innerHeight;
+
+const PLAYER_SIZE  = 50;
+const BALL_SIZE    = 24;
+const GOAL_WIDTH   = 20;
+const GOAL_HEIGHT  = 180;
+const FIELD_MARGIN = 8;
+
+const SPEEDS = {
+  userAccel:    0.14,   // user acceleration per frame
+  userMaxSpeed: 2.0,    // max user velocity
+  userFriction: 0.88,
+  aiAccel:      0.005,
+  aiFriction:   0.93,
+  aiKickPower:  6,
+  gkKickPower:  7,
+  userKickPow:  8,
+  spaceKickPow: 9,
+  ballFriction: 0.982,
+};
+
+// ─── State ───────────────────────────────────────────────────────────────────
+const keys    = {};
+const players = [];
+let scoreBlue = 0;
+let scoreRed  = 0;
+let ball      = { x: 0, y: 0, vx: 0, vy: 0, el: null };
+
+// Stuck-ball detection
+let stuckFrames  = 0;
+let lastBallX    = 0;
+let lastBallY    = 0;
+
+// ─── Input ───────────────────────────────────────────────────────────────────
+document.addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true;  e.preventDefault(); });
+document.addEventListener("keyup",   e => { keys[e.key.toLowerCase()] = false; });
+
+// ─── DOM helpers ─────────────────────────────────────────────────────────────
+function makeEntity(cssClass, x, y) {
+  const el = document.createElement("div");
+  el.className = `entity ${cssClass}`;
+  document.getElementById("entities").appendChild(el);
+  return el;
+}
+
+function applyPosition(el, x, y) {
+  el.style.left = x + "px";
+  el.style.top  = y + "px";
+}
+
+// ─── Player factory ──────────────────────────────────────────────────────────
+function createPlayer(cssClass, x, y, role, team, isUser = false) {
+  const p = { el: makeEntity(cssClass, x, y), x, y, homeX: x, homeY: y,
+              vx: 0, vy: 0, role, team, isUser };
+  players.push(p);
+  return p;
+}
+
+// ─── Spawn all players ───────────────────────────────────────────────────────
+function spawnPlayers() {
+  const cy = GH() / 2;
+
+  // Blue side: user + 1 forward + goalie
+  createPlayer("player-blue", 150,      cy,  "user", "b", true);
+  createPlayer("player-blue", 320,      cy,  "fwd",  "b");
+  createPlayer("goalie-blue", 60,       cy,  "gk",   "b");
+
+  // Red side: 1 forward + goalie
+  createPlayer("player-red",  GW()-320, cy,  "fwd",  "r");
+  createPlayer("goalie-red",  GW()-110, cy,  "gk",   "r");
+}
+
+// ─── Ball collision / kick ───────────────────────────────────────────────────
+function kickBall(p, power) {
+  const dx   = ball.x - (p.x + 25);
+  const dy   = ball.y - (p.y + 25);
+  const dist = Math.hypot(dx, dy);
+  if (dist < 50) {
+    // Small random nudge breaks perfect symmetry when two players face off
+    const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.25;
+    ball.vx = Math.cos(angle) * power;
+    ball.vy = Math.sin(angle) * power;
+  }
+}
+
+// ─── AI logic ────────────────────────────────────────────────────────────────
+function updateAI(p) {
+  const { homeX, homeY, role, team } = p;
+  let tx = homeX, ty = homeY;
+
+  if (role === "gk") {
+    p.y += (ball.y - 25 - p.y) * 0.10;
+    kickBall(p, SPEEDS.gkKickPower);
+    return;
+  }
+
+  if (role === "def") {
+    const ownHalf = (team === "b" && ball.x < GW() / 2) ||
+                    (team === "r" && ball.x > GW() / 2);
+    if (ownHalf) {
+      tx = ball.x + (team === "b" ? -60 : 60);
+      ty = ball.y;
+    }
+  }
+
+  if (role === "mid") {
+    tx = team === "b" ? GW() / 2 - 80 : GW() / 2 + 80;
+    ty = ball.y;
+  }
+
+  if (role === "fwd") {
+    // Approach ball at a slight angle (perpendicular offset) so the kick
+    // has a sideways component and doesn't dead-lock against an opponent
+    const toBallAngle = Math.atan2(ball.y - p.y, ball.x - p.x);
+    const sideOffset  = (team === "b" ? 1 : -1) * 30;
+    tx = ball.x + Math.cos(toBallAngle + Math.PI / 2) * sideOffset;
+    ty = ball.y + Math.sin(toBallAngle + Math.PI / 2) * sideOffset;
+  }
+
+  p.vx += (tx - p.x) * SPEEDS.aiAccel;
+  p.vy += (ty - p.y) * SPEEDS.aiAccel;
+  p.vx *= SPEEDS.aiFriction;
+  p.vy *= SPEEDS.aiFriction;
+  p.x  += p.vx;
+  p.y  += p.vy;
+
+  kickBall(p, SPEEDS.aiKickPower);
+}
+
+// ─── User logic ──────────────────────────────────────────────────────────────
+function updateUser(p) {
+  if (keys["w"] || keys["arrowup"])    p.vy -= SPEEDS.userAccel;
+  if (keys["s"] || keys["arrowdown"])  p.vy += SPEEDS.userAccel;
+  if (keys["a"] || keys["arrowleft"])  p.vx -= SPEEDS.userAccel;
+  if (keys["d"] || keys["arrowright"]) p.vx += SPEEDS.userAccel;
+
+  p.vx *= SPEEDS.userFriction;
+  p.vy *= SPEEDS.userFriction;
+
+  const ms = SPEEDS.userMaxSpeed;
+  p.x += Math.max(-ms, Math.min(ms, p.vx));
+  p.y += Math.max(-ms, Math.min(ms, p.vy));
+
+  if (keys[" "]) kickBall(p, SPEEDS.spaceKickPow);
+  kickBall(p, SPEEDS.userKickPow);
+}
+
+// ─── Scoring & reset ─────────────────────────────────────────────────────────
+function resetBall() {
+  ball.x  = GW() / 2;
+  ball.y  = GH() / 2;
+  ball.vx = 0;
+  ball.vy = 0;
+}
+
+function checkGoals() {
+  const top    = GH() / 2 - GOAL_HEIGHT / 2;
+  const bottom = GH() / 2 + GOAL_HEIGHT / 2;
+
+  if (ball.x < GOAL_WIDTH + FIELD_MARGIN && ball.y > top && ball.y < bottom) {
+    scoreRed++;
+    document.getElementById("score-red").textContent = scoreRed;
+    resetBall();
+  }
+  if (ball.x > GW() - GOAL_WIDTH - FIELD_MARGIN - BALL_SIZE && ball.y > top && ball.y < bottom) {
+    scoreBlue++;
+    document.getElementById("score-blue").textContent = scoreBlue;
+    resetBall();
+  }
+}
+
+// ─── Boundary clamping ───────────────────────────────────────────────────────
+function clampBall() {
+  const maxX = GW() - BALL_SIZE - FIELD_MARGIN;
+  const maxY = GH() - BALL_SIZE - FIELD_MARGIN;
+
+  if (ball.x < FIELD_MARGIN)  { ball.x = FIELD_MARGIN; ball.vx =  Math.abs(ball.vx); }
+  if (ball.x > maxX)          { ball.x = maxX;          ball.vx = -Math.abs(ball.vx); }
+  if (ball.y < FIELD_MARGIN)  { ball.y = FIELD_MARGIN;  ball.vy =  Math.abs(ball.vy); }
+  if (ball.y > maxY)          { ball.y = maxY;           ball.vy = -Math.abs(ball.vy); }
+}
+
+function clampPlayer(p) {
+  p.x = Math.max(FIELD_MARGIN, Math.min(GW() - PLAYER_SIZE - FIELD_MARGIN, p.x));
+  p.y = Math.max(FIELD_MARGIN, Math.min(GH() - PLAYER_SIZE - FIELD_MARGIN, p.y));
+}
+
+// ─── Main game loop ──────────────────────────────────────────────────────────
+function gameLoop() {
+  for (const p of players) {
+    if (p.isUser) updateUser(p);
+    else          updateAI(p);
+    clampPlayer(p);
+    applyPosition(p.el, p.x, p.y);
+  }
+
+  ball.x  += ball.vx;
+  ball.y  += ball.vy;
+  ball.vx *= SPEEDS.ballFriction;
+  ball.vy *= SPEEDS.ballFriction;
+
+  clampBall();
+  checkGoals();
+
+  // Stuck-ball detector: if ball barely moves for ~60 frames, pop it free
+  const moved = Math.hypot(ball.x - lastBallX, ball.y - lastBallY);
+  if (moved < 0.5) {
+    stuckFrames++;
+    if (stuckFrames > 60) {
+      ball.vx += (Math.random() - 0.5) * 6;
+      ball.vy += (Math.random() - 0.5) * 6;
+      stuckFrames = 0;
+    }
+  } else {
+    stuckFrames = 0;
+  }
+  lastBallX = ball.x;
+  lastBallY = ball.y;
+
+  applyPosition(ball.el, ball.x, ball.y);
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+function init() {
+  spawnPlayers();
+  ball.el = makeEntity("ball", 0, 0);
+  resetBall();
+  applyPosition(ball.el, ball.x, ball.y);
+  gameLoop();
+}
+
+init();
+</script>
+</body>
+</html>
