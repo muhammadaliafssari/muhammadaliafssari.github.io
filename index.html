@@ -36,7 +36,15 @@ body { overflow: hidden; background: #111; font-family: Arial; }
 .player-red    { width: 50px; height: 50px; background: #e03131; border: 3px solid #fff; }
 .goalie-blue   { width: 50px; height: 50px; background: #7048e8; border: 3px solid #fff; }
 .goalie-red    { width: 50px; height: 50px; background: #f59f00; border: 3px solid #fff; }
-.ball          { width: 24px; height: 24px; background: #fff; border: 2px solid #000; }
+.ball          { width: 24px; height: 24px; background: #fff; border: 2px solid #000; border-radius: 50%; position: absolute; }
+
+/* Ball trail dots */
+.trail {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
 
 /* Controls hint */
 .controls-hint {
@@ -71,17 +79,34 @@ const GOAL_HEIGHT  = 180;
 const FIELD_MARGIN = 8;
 
 const SPEEDS = {
-  userAccel:    0.14,   // user acceleration per frame
-  userMaxSpeed: 2.0,    // max user velocity
-  userFriction: 0.88,
-  aiAccel:      0.005,
+  userAccel:    0.28,   // faster user acceleration
+  userMaxSpeed: 3.8,    // higher user top speed
+  userFriction: 0.90,
+  aiAccel:      0.003,  // slower AI acceleration
   aiFriction:   0.93,
-  aiKickPower:  6,
-  gkKickPower:  7,
-  userKickPow:  8,
-  spaceKickPow: 9,
+  aiKickPower:  5,      // weaker AI kicks
+  gkKickPower:  6,
+  userKickPow:  9,
+  spaceKickPow: 11,
   ballFriction: 0.982,
 };
+
+// ─── Trail config ─────────────────────────────────────────────────────────────
+const TRAIL_LENGTH  = 16;   // number of trail dots
+const TRAIL_RECORD  = 2;    // record a point every N frames
+const trailPositions = [];  // { x, y }
+const trailEls       = [];  // DOM elements
+let   frameCount     = 0;
+
+// Trail colours: white → cyan → blue → transparent
+const TRAIL_COLORS = [
+  [255,255,255],
+  [200,240,255],
+  [100,200,255],
+  [50, 140,255],
+  [20,  80,220],
+  [10,  40,180],
+];
 
 // ─── State ───────────────────────────────────────────────────────────────────
 const keys    = {};
@@ -91,19 +116,22 @@ let scoreRed  = 0;
 let ball      = { x: 0, y: 0, vx: 0, vy: 0, el: null };
 
 // Stuck-ball detection
-let stuckFrames  = 0;
-let lastBallX    = 0;
-let lastBallY    = 0;
+let stuckFrames = 0;
+let lastBallX   = 0;
+let lastBallY   = 0;
 
 // ─── Input ───────────────────────────────────────────────────────────────────
 document.addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true;  e.preventDefault(); });
 document.addEventListener("keyup",   e => { keys[e.key.toLowerCase()] = false; });
 
 // ─── DOM helpers ─────────────────────────────────────────────────────────────
-function makeEntity(cssClass, x, y) {
+const gameEl = document.getElementById("game");
+const entitiesEl = document.getElementById("entities");
+
+function makeEntity(cssClass) {
   const el = document.createElement("div");
   el.className = `entity ${cssClass}`;
-  document.getElementById("entities").appendChild(el);
+  entitiesEl.appendChild(el);
   return el;
 }
 
@@ -112,9 +140,55 @@ function applyPosition(el, x, y) {
   el.style.top  = y + "px";
 }
 
+// ─── Trail setup ─────────────────────────────────────────────────────────────
+function initTrail() {
+  for (let i = 0; i < TRAIL_LENGTH; i++) {
+    const el = document.createElement("div");
+    el.className = "trail";
+    el.style.display = "none";
+    gameEl.appendChild(el);
+    trailEls.push(el);
+    trailPositions.push({ x: 0, y: 0 });
+  }
+}
+
+function updateTrail() {
+  // Record ball position every TRAIL_RECORD frames
+  if (frameCount % TRAIL_RECORD === 0) {
+    trailPositions.unshift({ x: ball.x + BALL_SIZE / 2, y: ball.y + BALL_SIZE / 2 });
+    if (trailPositions.length > TRAIL_LENGTH) trailPositions.pop();
+  }
+
+  const speed = Math.hypot(ball.vx, ball.vy);
+  const visible = speed > 1.5; // only show trail when ball is moving fast enough
+
+  for (let i = 0; i < TRAIL_LENGTH; i++) {
+    const el  = trailEls[i];
+    const pos = trailPositions[i];
+    if (!pos || !visible) { el.style.display = "none"; continue; }
+
+    const t       = i / TRAIL_LENGTH;            // 0 = newest, 1 = oldest
+    const size    = Math.max(2, BALL_SIZE * (1 - t * 0.85));
+    const alpha   = (1 - t) * 0.75;
+    const cIdx    = Math.min(Math.floor(t * TRAIL_COLORS.length), TRAIL_COLORS.length - 1);
+    const [r,g,b] = TRAIL_COLORS[cIdx];
+
+    el.style.display = "block";
+    el.style.left    = pos.x + "px";
+    el.style.top     = pos.y + "px";
+    el.style.width   = size + "px";
+    el.style.height  = size + "px";
+    el.style.background = `rgba(${r},${g},${b},${alpha.toFixed(2)})`;
+    // Subtle glow on the newest dots
+    el.style.boxShadow = i < 4
+      ? `0 0 ${6 - i}px rgba(${r},${g},${b},0.7)`
+      : "none";
+  }
+}
+
 // ─── Player factory ──────────────────────────────────────────────────────────
 function createPlayer(cssClass, x, y, role, team, isUser = false) {
-  const p = { el: makeEntity(cssClass, x, y), x, y, homeX: x, homeY: y,
+  const p = { el: makeEntity(cssClass), x, y, homeX: x, homeY: y,
               vx: 0, vy: 0, role, team, isUser };
   players.push(p);
   return p;
@@ -140,7 +214,6 @@ function kickBall(p, power) {
   const dy   = ball.y - (p.y + 25);
   const dist = Math.hypot(dx, dy);
   if (dist < 50) {
-    // Small random nudge breaks perfect symmetry when two players face off
     const angle = Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.25;
     ball.vx = Math.cos(angle) * power;
     ball.vy = Math.sin(angle) * power;
@@ -153,28 +226,12 @@ function updateAI(p) {
   let tx = homeX, ty = homeY;
 
   if (role === "gk") {
-    p.y += (ball.y - 25 - p.y) * 0.10;
+    p.y += (ball.y - 25 - p.y) * 0.08;
     kickBall(p, SPEEDS.gkKickPower);
     return;
   }
 
-  if (role === "def") {
-    const ownHalf = (team === "b" && ball.x < GW() / 2) ||
-                    (team === "r" && ball.x > GW() / 2);
-    if (ownHalf) {
-      tx = ball.x + (team === "b" ? -60 : 60);
-      ty = ball.y;
-    }
-  }
-
-  if (role === "mid") {
-    tx = team === "b" ? GW() / 2 - 80 : GW() / 2 + 80;
-    ty = ball.y;
-  }
-
   if (role === "fwd") {
-    // Approach ball at a slight angle (perpendicular offset) so the kick
-    // has a sideways component and doesn't dead-lock against an opponent
     const toBallAngle = Math.atan2(ball.y - p.y, ball.x - p.x);
     const sideOffset  = (team === "b" ? 1 : -1) * 30;
     tx = ball.x + Math.cos(toBallAngle + Math.PI / 2) * sideOffset;
@@ -215,6 +272,7 @@ function resetBall() {
   ball.y  = GH() / 2;
   ball.vx = 0;
   ball.vy = 0;
+  trailPositions.length = 0;
 }
 
 function checkGoals() {
@@ -251,6 +309,8 @@ function clampPlayer(p) {
 
 // ─── Main game loop ──────────────────────────────────────────────────────────
 function gameLoop() {
+  frameCount++;
+
   for (const p of players) {
     if (p.isUser) updateUser(p);
     else          updateAI(p);
@@ -266,7 +326,7 @@ function gameLoop() {
   clampBall();
   checkGoals();
 
-  // Stuck-ball detector: if ball barely moves for ~60 frames, pop it free
+  // Stuck-ball detector
   const moved = Math.hypot(ball.x - lastBallX, ball.y - lastBallY);
   if (moved < 0.5) {
     stuckFrames++;
@@ -281,6 +341,7 @@ function gameLoop() {
   lastBallX = ball.x;
   lastBallY = ball.y;
 
+  updateTrail();
   applyPosition(ball.el, ball.x, ball.y);
 
   requestAnimationFrame(gameLoop);
@@ -288,8 +349,9 @@ function gameLoop() {
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 function init() {
+  initTrail();
   spawnPlayers();
-  ball.el = makeEntity("ball", 0, 0);
+  ball.el = makeEntity("ball");
   resetBall();
   applyPosition(ball.el, ball.x, ball.y);
   gameLoop();
