@@ -10,9 +10,9 @@
 body { overflow: hidden; background: #111; font-family: Arial; } /* hides scroll bars, dark background */
 
 #game {
-  position: relative; /* so that the children inside can be placed anywhere inside the box */
-  width: 100vw;       /* so the game sttreches to the full with of the screen */
-  height: 100vh;      /* so that the game stretches to the full height of the screen */
+  position: relative; /* so like that the children inside can be placed anywhere inside the box */
+  width: 100vw;       /* so like the game sttreches to the full with of the screen */
+  height: 100vh;      /* so like that the game stretches to the full height of the screen */
   overflow: hidden;   /* chops of that it takes off anything that goes outside */
   background: repeating-linear-gradient(90deg, #1b8a3d 0 120px, #2ca84c 120px 240px); /* the alternating green stripes in the grass */
 }
@@ -127,27 +127,27 @@ body { overflow: hidden; background: #111; font-family: Arial; } /* hides scroll
 const canvas = document.getElementById("gameCanvas");
 const ctx    = canvas.getContext("2d"); // ctx is the tool we use to draw shapes
 
-// it makes the canvas match the window size
+// it makes it the canvas match the window size
 function resizeCanvas() { canvas.width = innerWidth; canvas.height = innerHeight; }
-resizeCanvas(); // makes it do it once right away
+resizeCanvas(); // makes it it do it once right away
 window.addEventListener("resize", resizeCanvas); // and again whenever the window changes size
 
 const GW = () => innerWidth;  // the shortcut for the screen width
 const GH = () => innerHeight; // the shortcut for the screen height
 
-// sets up the audio system so we can make sounds with code
+// sets up the audio system so like we can make sounds with code
 const AC = new (window.AudioContext || window.webkitAudioContext)();
 
 // plays one beep or tone sound
 // freq is how high or low the pitch is, type is what kind of sound, duration is how long
 function playTone(freq, type, duration, vol = 0.3, delay = 0) {
-  const o = AC.createOscillator(); // this makes the actual sound
-  const g = AC.createGain();       // this controls the volume
-  o.connect(g);                    // this hooks the sound into volume
-  g.connect(AC.destination);       // this hooks the volume into speakers
+  const o = AC.createOscillator(); // this kinda makes it the actual sound
+  const g = AC.createGain();       // this kinda controls the volume
+  o.connect(g);                    // this kinda hooks the sound into volume
+  g.connect(AC.destination);       // this kinda hooks the volume into speakers
   o.type = type;
   o.frequency.value = freq;
-  g.gain.setValueAtTime(vol, AC.currentTime + delay);                            // starts at this volume
+  g.gain.setValueAtTime(vol, AC.currentTime + delay);                            // starts at this kinda volume
   g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + delay + duration); // the fade out
   o.start(AC.currentTime + delay);
   o.stop(AC.currentTime + delay + duration);
@@ -161,51 +161,51 @@ function soundPowerup()     { [400,600,800].forEach((f,i)=>playTone(f,"sine",0.1
 function soundCountdown(n)  { playTone(n===0?880:660,"sine",0.18,0.5); } // the high beep for go, low for numbers
 
 // the sizes of the things in pixels
-const PLAYER_R   = 22;  // this is how wide a player circle is
-const BALL_R     = 11;  // this ishow wide the ball is
+const PLAYER_R   = 22;  // this kinda is how wide a player circle is
+const BALL_R     = 11;  // this kinda ishow wide the ball is
 const GOAL_W     = 22;  // how wide the goal post is
 const GOAL_H     = 180; // how tall the goal opening is
 const MARGIN     = 8;   // the gap between the field edge and screen edge
 
 const MATCH_SECS     = 120;  // match is 2 minutes long
 const STAMINA_MAX    = 100;  // the full sprint energy
-const STAMINA_SPRINT = 0.55; // this is how fast stamina drains when sprinting
-const STAMINA_RECOVER= 0.22; // this is how fast stamina refills when not sprinting
-const SPRINT_MULT    = 1.7;  // this is how much faster you go when sprinting
+const STAMINA_SPRINT = 0.55; // this kinda is how fast stamina drains when sprinting
+const STAMINA_RECOVER= 0.22; // this kinda is how fast stamina refills when not sprinting
+const SPRINT_MULT    = 1.7;  // this kinda is how much faster you go when sprinting
 
-// this is how hard or fast the ai players are on each difficulty
+// this kinda is how hard or fast the ai players are on each difficulty
 const DIFF = {
   easy:   { aiAccel: 0.003, aiFric: 0.89, aiKick: 4.5, gkKick: 5,   gkSpeed: 0.05 }, // slow and weak
   medium: { aiAccel: 0.006, aiFric: 0.91, aiKick: 6,   gkKick: 7,   gkSpeed: 0.08 }, // balanced
   hard:   { aiAccel: 0.010, aiFric: 0.93, aiKick: 8,   gkKick: 9,   gkSpeed: 0.12 }, // fast and strong
 };
 
-let difficulty = "medium"; // this will get set when you pick a difficulty
+let difficulty = "medium"; // this kinda will get set when you pick a difficulty
 
-// this is your players movement and kick settings
+// this kinda is your players movement and kick settings
 const SPEEDS = {
-  userAccel:    0.42,  // this is how fast you speed up
+  userAccel:    0.42,  // this kinda is how fast you speed up
   userMaxSpeed: 5.5,   // the fastest you can move
-  userFriction: 0.88,  // this is how fast you slow down (lower = stops faster)
-  userKickPow:  9,     // this is how hard a normal kick is
-  spaceKickPow: 22,    // this is how hard a fully charged shot is
+  userFriction: 0.88,  // this kinda is how fast you slow down (lower = stops faster)
+  userKickPow:  9,     // this kinda is how hard a normal kick is
+  spaceKickPow: 22,    // this kinda is how hard a fully charged shot is
   ballFriction: 0.984, // thsi is how fast the ball slows down as it rolls
 };
 
 // these are the three powerups that show up on the field
 const POWERUP_TYPES = [
-  { id: "speed",   label: "⚡ SPEED",    color: "#ffd43b", duration: 5000 }, // this makes you faster for 5 seconds
-  { id: "bigball", label: "🔵 BIG BALL", color: "#74c0fc", duration: 6000 }, // this makes the ball huge for 6 seconds
-  { id: "freeze",  label: "❄️ FREEZE GK",color: "#a5d8ff", duration: 5000 }, // this freezes both goalkeepers for 5 seconds
+  { id: "speed",   label: "⚡ SPEED",    color: "#ffd43b", duration: 5000 }, // this kinda makes it you faster for 5 seconds
+  { id: "bigball", label: "🔵 BIG BALL", color: "#74c0fc", duration: 6000 }, // this kinda makes it the ball huge for 6 seconds
+  { id: "freeze",  label: "❄️ FREEZE GK",color: "#a5d8ff", duration: 5000 }, // this kinda freezes both goalkeepers for 5 seconds
 ];
 
-// this keeps track of which keys are held down right now
+// this kinda keeps track of wich keys are held down right now
 const keys = {};
 document.addEventListener("keydown", e => {
-  keys[e.key.toLowerCase()] = true; // this marks this key as pressed
+  keys[e.key.toLowerCase()] = true; // this kinda marks this kinda key as pressed
   if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())) e.preventDefault(); // the stop arrow keys from scrolling the page
 });
-document.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; }); // this marks the key as released
+document.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; }); // this kinda marks the key as released
 
 // all the game variables
 let players     = [];       // list of every player
@@ -217,13 +217,13 @@ let frameCount  = 0;        // counts how many frames have happened total
 let stuckFrames = 0;        // counts how long the ball has barely moved
 let lastBallX   = 0, lastBallY = 0; // where the ball was last frame
 
-// the ball object — x/y is where it really is, rx/ry is the smoother drawn position
+// the ball object — x/y is where it realy is, rx/ry is the smoother drawn position
 const ball = { x:0, y:0, vx:0, vy:0, rx:0, ry:0, r:BALL_R };
 
 const confetti = []; // list of confetti pieces flying around after a goal
 
 let activePowerups = []; // powerups sitting on the field right now
-let powerupEffects = {}; // which powerup effects are currently active and when they expire
+let powerupEffects = {}; // wich powerup effects are currently active and when they expire
 let powerupLabels  = []; // floating text like "⚡ SPEED" that shows when you grab a powerup
 
 let p1Power = 0, p1Charging = false; // how charged P1's shot is (0-100) and if they're holding SPACE
@@ -239,14 +239,14 @@ function createPlayer(x, y, role, team, color, label, isUser=false, isP2=false) 
   const p = {
     x, y,           // real position used for physics
     rx: x, ry: y,   // smoothed position used just for drawing (looks nicer)
-    homeX: x, homeY: y, // where this player starts / returns to (mainly for goalkeepers)
+    homeX: x, homeY: y, // where this kinda player starts / returns to (mainly for goalkeepers)
     vx: 0, vy: 0,   // speed going left/right and up/down
-    role,            // what this player does: "user", "fwd", "gk", or "p2"
-    team,            // which team: "b" for blue or "r" for red
+    role,            // what this kinda player does: "user", "fwd", "gk", or "p2"
+    team,            // wich team: "b" for blue or "r" for red
     color,           // the color of their circle
     label,           // the text on their circle like "YOU" or "GK"
-    isUser,          // is this the player P1 controls?
-    isP2,            // is this the player P2 controls?
+    isUser,          // is this kinda the player P1 controls?
+    isP2,            // is this kinda the player P2 controls?
     tackling: false, // are they doing a slide tackle right now?
     tackleTimer: 0,  // how many frames are left in the tackle animation
     frozen: false,   // are they frozen by the freeze powerup?
@@ -271,12 +271,12 @@ function spawnPlayers() {
   createPlayer(GW()-150, cy, "p2",  "r","#c92a2a","P2",  false, true);  // player 2 (if someone is playing)
 }
 
-// browsers block sound until you press a key, so this turns sound back on
+// browsers block sound until you press a key, so like this kinda turns sound back on
 document.addEventListener("keydown", () => { if(AC.state==="suspended") AC.resume(); }, {once:true});
 
 // runs when you click easy, medium, or hard — sets everything up and starts the game
 function startGame(diff) {
-  difficulty = diff; // save which difficulty was picked
+  difficulty = diff; // save wich difficulty was picked
   document.getElementById("difficulty-screen").style.display = "none"; // hide the menu
   spawnPlayers();    // put players on the field
   resetBall();       // put ball in the center
@@ -333,7 +333,7 @@ function drawTrail() {
   const speed = Math.hypot(ball.vx, ball.vy); // how fast the ball is going
   if (speed < 0.8) return; // don't bother drawing if the ball is barely moving
 
-  for (let i = trail.length-1; i >= 0; i--) { // draw oldest positions first so newer ones are on top
+  for (let i = trail.length-1; i >= 0; i--) { // draw oldest positions first so like newer ones are on top
     const t     = i / TRAIL_MAX;               // 0 = newest, 1 = oldest
     const alpha = (1-t) * 0.65 * Math.min(speed/4,1); // older = more transparent
     const r     = Math.max(1, ball.r * (1 - t*0.82));  // older = smaller circle
@@ -395,14 +395,14 @@ function updateConfetti() {
 function drawConfetti() {
   for (const c of confetti) {
     ctx.save();               // remember current drawing settings
-    ctx.translate(c.x, c.y); // move to this piece's position
+    ctx.translate(c.x, c.y); // move to this kinda piece's position
     ctx.rotate(c.rot);        // rotate it
     ctx.globalAlpha = c.life; // set how see-through it is
     ctx.fillStyle = c.color;
     ctx.fillRect(-c.w/2, -c.h/2, c.w, c.h); // draw a small rectangle
     ctx.restore();            // go back to normal drawing settings
   }
-  ctx.globalAlpha = 1; // reset transparency so other drawing isn't affected
+  ctx.globalAlpha = 1; // reset transparency so like other drawing isn't affected
 }
 
 // schedules a new random powerup to appear on the field every 8-15 seconds
@@ -440,7 +440,7 @@ function checkPowerupCollisions() {
 // draws powerup icons on the field and any floating pickup labels
 function drawPowerups() {
   for (const pu of activePowerups) {
-    pu.pulse += 0.07; // slowly increase so it bounces using sin()
+    pu.pulse += 0.07; // slowly increase so like it bounces using sin()
     const s = 1 + Math.sin(pu.pulse)*0.12; // pulsing scale (between 0.88 and 1.12)
 
     ctx.save();
@@ -519,7 +519,7 @@ function updateTackles() {
 // controls all the AI players (bots and goalkeepers)
 function updateAI(p) {
   if (p.frozen) return; // do nothing if frozen by powerup
-  const D = DIFF[difficulty]; // grab this difficulty's settings
+  const D = DIFF[difficulty]; // grab this kinda difficulty's settings
   let tx = p.homeX, ty = p.homeY; // default: go back to starting position
 
   if (p.role === "gk") {
@@ -527,13 +527,13 @@ function updateAI(p) {
     p.vy += (ball.y - p.y) * D.gkSpeed; // speed toward ball's height
     p.vy *= 0.85;    // slow down a bit each frame
     p.y  += p.vy;   // move
-    p.x   = p.homeX; // stay locked at home x so they can't leave the goal
+    p.x   = p.homeX; // stay locked at home x so like they can't leave the goal
     kickBall(p, D.gkKick); // kick if ball is close
     return;
   }
 
   if (p.role === "fwd") {
-    // approach the ball at a slight angle so they don't get stuck head-on with another player
+    // approach the ball at a slight angle so like they don't get stuck head-on with another player
     const angle = Math.atan2(ball.y-p.y, ball.x-p.x); // direction straight to ball
     const side  = (p.team==="b" ? 1 : -1) * 28;       // offset to the side a little
     tx = ball.x + Math.cos(angle + Math.PI/2) * side;  // target is slightly to the side of the ball
@@ -634,7 +634,7 @@ function checkGoals() {
   let scorer = null;
   if (ball.x - ball.r < GOAL_W + MARGIN && ball.y > top && ball.y < bot) scorer = "red";  // ball went into the left goal, red scores
   if (ball.x + ball.r > GW()-GOAL_W-MARGIN && ball.y > top && ball.y < bot) scorer = "blue"; // ball went into the right goal, blue scores
-  if (!scorer) return; // no goal this frame
+  if (!scorer) return; // no goal this kinda frame
 
   if (scorer==="red")  { scoreRed++;  document.getElementById("score-red").textContent  = scoreRed; }
   if (scorer==="blue") { scoreBlue++; document.getElementById("score-blue").textContent = scoreBlue; }
@@ -731,7 +731,7 @@ function clampPlayer(p) {
 function drawPlayer(p) {
   const x = p.rx, y = p.ry; // use smoothed position for drawing
 
-  // dark shadow behind the player so they look slightly 3D
+  // dark shadow behind the player so like they look slightly 3D
   ctx.beginPath();
   ctx.ellipse(x+3, y+5, PLAYER_R*0.85, PLAYER_R*0.4, 0, 0, Math.PI*2);
   ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.fill();
@@ -823,7 +823,7 @@ function gameLoop() {
     clampBall();  // bounce off walls
     checkGoals(); // check if a goal was scored
 
-    // if the ball barely moves for 70 frames, give it a random push so it doesn't get stuck
+    // if the ball barely moves for 70 frames, give it a random push so like it doesn't get stuck
     const moved = Math.hypot(ball.x-lastBallX, ball.y-lastBallY);
     if (moved < 0.4) {
       if (++stuckFrames > 70) {
@@ -831,7 +831,7 @@ function gameLoop() {
         ball.vy += (Math.random()-0.5) * 5;
         stuckFrames = 0;
       }
-    } else stuckFrames = 0; // ball is moving so reset the counter
+    } else stuckFrames = 0; // ball is moving so like reset the counter
     lastBallX = ball.x;
     lastBallY = ball.y;
 
@@ -854,7 +854,7 @@ function gameLoop() {
   drawBall();     // draw ball on top of players
   drawConfetti(); // draw confetti on top of everything
 
-  requestAnimationFrame(gameLoop); // run this function again next frame
+  requestAnimationFrame(gameLoop); // run this kinda function again next frame
 }
 
 gameLoop(); // start the loop
