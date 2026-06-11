@@ -1,134 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8"> <-- tells the browser to use the UTF 8 text coding 
+<meta name="viewport" content="width=device-width,initial-scale=1.0"> <!-- makes it scale correctly on mobile -->
 <title>Soccer</title>
 <style>
+/* reset all element sizing so padding/border are included in width/height */
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* hide scrollbars since the game fills the whole screen */
 body { overflow: hidden; background: #111; font-family: Arial; }
 
+/* the main game container fills the full viewport */
 #game {
-  position: relative; width: 100vw; height: 100vh; overflow: hidden;
+  position: relative;      /* child elements can be positioned relative to this */
+  width: 100vw;            /* full viewport width */
+  height: 100vh;           /* full viewport height */
+  overflow: hidden;        /* clip anything that spills outside */
+  /* alternating dark/light green stripes to look like a grass field */
   background: repeating-linear-gradient(90deg, #1b8a3d 0 120px, #2ca84c 120px 240px);
 }
-.field-border  { position: absolute; inset: 8px; border: 4px solid rgba(255,255,255,0.85); pointer-events: none; }
-.center-line   { position: absolute; left: 50%; top: 8px; bottom: 8px; width: 3px; background: rgba(255,255,255,0.85); pointer-events: none; }
-.center-circle { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
-                 width: 220px; height: 220px; border: 3px solid rgba(255,255,255,0.85); border-radius: 50%; pointer-events: none; }
-.goal { position: absolute; top: 50%; transform: translateY(-50%); width: 22px; height: 180px; background: rgba(255,255,255,0.9); pointer-events: none; }
-.goal-left  { left: 8px; }
-.goal-right { right: 8px; }
 
+/* white rectangle border around the whole field */
+.field-border { position: absolute; inset: 8px; border: 4px solid rgba(255,255,255,0.85); pointer-events: none; }
+
+/* vertical white line splitting the field in half */
+.center-line  { position: absolute; left: 50%; top: 8px; bottom: 8px; width: 3px; background: rgba(255,255,255,0.85); pointer-events: none; }
+
+/* circle in the center of the field */
+.center-circle {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  width: 220px; height: 220px; border: 3px solid rgba(255,255,255,0.85); border-radius: 50%; pointer-events: none;
+}
+
+/* white goal post rectangles on each side */
+.goal { position: absolute; top: 50%; transform: translateY(-50%); width: 22px; height: 180px; background: rgba(255,255,255,0.9); pointer-events: none; }
+.goal-left  { left: 8px; }   /* blue team's goal on the left */
+.goal-right { right: 8px; }  /* red team's goal on the right */
+
+/* the canvas sits on top of the field divs and is where players/ball are drawn */
 #gameCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
-/* HUD */
+/* score display at the top center */
 #hud {
   position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
   color: #fff; font-size: 26px; font-weight: bold; letter-spacing: 2px;
   text-shadow: 0 2px 8px rgba(0,0,0,0.6); pointer-events: none; white-space: nowrap;
 }
+
+/* match countdown timer below the score */
 #timer {
   position: absolute; top: 52px; left: 50%; transform: translateX(-50%);
   color: #fff; font-size: 20px; font-weight: bold;
   text-shadow: 0 2px 6px rgba(0,0,0,0.5); pointer-events: none;
 }
+
+/* small keyboard hint text at the bottom */
 #controls-hint {
   position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
   color: rgba(255,255,255,0.5); font-size: 12px; pointer-events: none; text-align: center; line-height: 1.6;
 }
 
-/* Stamina bars */
+/* stamina bar containers — thin horizontal bars near the bottom corners */
 #stamina-p1, #stamina-p2 {
   position: absolute; bottom: 44px; height: 7px; border-radius: 4px;
-  background: rgba(255,255,255,0.15); overflow: hidden; pointer-events: none;
-  width: 120px;
+  background: rgba(255,255,255,0.15); /* dim grey track behind the fill */
+  overflow: hidden; pointer-events: none; width: 120px;
 }
-#stamina-p1 { left: 20px; }
-#stamina-p2 { right: 20px; }
-.stamina-fill { height: 100%; border-radius: 4px; transition: width 0.1s; }
-#stamina-p1 .stamina-fill { background: #4dabf7; }
-#stamina-p2 .stamina-fill { background: #ff6b6b; }
+#stamina-p1 { left: 20px; }   /* P1 stamina bar on the left */
+#stamina-p2 { right: 20px; }  /* P2 stamina bar on the right */
 
-/* Power shot meter */
+/* the coloured fill inside the stamina bar that shrinks/grows */
+.stamina-fill { height: 100%; border-radius: 4px; transition: width 0.1s; }
+#stamina-p1 .stamina-fill { background: #4dabf7; } /* blue for P1 */
+#stamina-p2 .stamina-fill { background: #ff6b6b; } /* red for P2 */
+
+/* power shot charge bar — shown in the center bottom while SPACE is held */
 #powerbar {
   position: absolute; bottom: 58px; left: 50%; transform: translateX(-50%);
   width: 140px; height: 10px; border-radius: 5px;
-  background: rgba(255,255,255,0.15); overflow: hidden; pointer-events: none; display: none;
+  background: rgba(255,255,255,0.15); overflow: hidden; pointer-events: none;
+  display: none; /* hidden by default; shown only while charging a shot */
 }
+/* yellow-to-red gradient fill that grows as the shot charges */
 #powerbar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg,#ffd43b,#ff6b6b); width: 0%; }
 
-/* Goal splash */
+/* full-screen overlay that shows "GOAL!" or "BLUE WINS!" */
 #goal-splash {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  pointer-events: none; opacity: 0; transition: opacity 0.15s;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s; /* fades in/out smoothly */
 }
-#goal-text {
-  font-size: 96px; font-weight: 900; letter-spacing: 6px;
-  text-shadow: 0 4px 30px rgba(0,0,0,0.7);
-  color: #fff;
-}
+/* the large GOAL text itself */
+#goal-text { font-size: 96px; font-weight: 900; letter-spacing: 6px; text-shadow: 0 4px 30px rgba(0,0,0,0.7); color: #fff; }
 
-/* Countdown overlay */
-#countdown {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  pointer-events: none; opacity: 0;
-}
+/* full-screen overlay for the 3-2-1-GO countdown */
+#countdown { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; }
 #countdown-text { font-size: 120px; font-weight: 900; color: #fff; text-shadow: 0 4px 30px rgba(0,0,0,0.6); }
 
-/* Difficulty picker */
+/* difficulty selection screen shown before the match starts */
 #difficulty-screen {
   position: absolute; inset: 0; background: rgba(0,0,0,0.82);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; z-index: 10;
 }
 #difficulty-screen h1 { color: #fff; font-size: 42px; font-weight: 900; letter-spacing: 3px; margin-bottom: 8px; }
 #difficulty-screen p  { color: rgba(255,255,255,0.6); font-size: 15px; margin-bottom: 8px; }
+
+/* shared style for the three difficulty buttons */
 .diff-btn {
   padding: 14px 48px; font-size: 20px; font-weight: bold; border: none; border-radius: 8px;
   cursor: pointer; letter-spacing: 1px; transition: transform 0.1s, opacity 0.1s;
 }
-.diff-btn:hover { transform: scale(1.05); }
-.diff-btn.easy   { background: #40c057; color: #fff; }
-.diff-btn.medium { background: #fd7e14; color: #fff; }
-.diff-btn.hard   { background: #e03131; color: #fff; }
+.diff-btn:hover { transform: scale(1.05); } /* slight grow on hover */
+.diff-btn.easy   { background: #40c057; color: #fff; } /* green for easy */
+.diff-btn.medium { background: #fd7e14; color: #fff; } /* orange for medium */
+.diff-btn.hard   { background: #e03131; color: #fff; } /* red for hard */
 
-/* P2 controls label */
-#p2-label {
-  position: absolute; top: 14px; right: 20px;
-  color: rgba(255,100,100,0.7); font-size: 12px; pointer-events: none;
-}
+/* small label reminding P2 of their controls */
+#p2-label { position: absolute; top: 14px; right: 20px; color: rgba(255,100,100,0.7); font-size: 12px; pointer-events: none; }
 </style>
 </head>
 <body>
 <div id="game">
-  <div class="field-border"></div>
-  <div class="center-line"></div>
-  <div class="center-circle"></div>
-  <div class="goal goal-left"></div>
-  <div class="goal goal-right"></div>
+  <!-- CSS-drawn field markings (no canvas needed for these static shapes) -->
+  <div class="field-border"></div>   <!-- outer white border -->
+  <div class="center-line"></div>    <!-- halfway line -->
+  <div class="center-circle"></div>  <!-- center circle -->
+  <div class="goal goal-left"></div>  <!-- blue goal -->
+  <div class="goal goal-right"></div> <!-- red goal -->
+
+  <!-- canvas where players, ball, trail, confetti, and powerups are drawn -->
   <canvas id="gameCanvas"></canvas>
 
+  <!-- score display e.g. "Blue 2 – 1 Red" -->
   <div id="hud">Blue <span id="score-blue">0</span> – <span id="score-red">0</span> Red</div>
-  <div id="timer">2:00</div>
-  <div id="p2-label">P2: IJKL + O</div>
+  <div id="timer">2:00</div>          <!-- match timer, counts down from 2:00 -->
+  <div id="p2-label">P2: IJKL + O</div> <!-- P2 control reminder -->
 
+  <!-- P1 and P2 stamina bars (the fills are updated by JS each frame) -->
   <div id="stamina-p1"><div class="stamina-fill" id="sf1"></div></div>
   <div id="stamina-p2"><div class="stamina-fill" id="sf2"></div></div>
 
+  <!-- power shot charge bar (hidden until SPACE is held) -->
   <div id="powerbar"><div id="powerbar-fill"></div></div>
 
+  <!-- goal / match-end splash overlay -->
   <div id="goal-splash"><div id="goal-text">GOAL!</div></div>
+
+  <!-- 3-2-1-GO countdown overlay -->
   <div id="countdown"><div id="countdown-text">3</div></div>
 
+  <!-- keyboard hint shown at the bottom of the screen -->
   <div id="controls-hint">
     P1: WASD move · SPACE charge shot · SHIFT slide tackle<br>
     P2: IJKL move · O charge shot · P slide tackle
   </div>
 
-  <!-- Difficulty screen -->
+  <!-- difficulty picker shown before each match -->
   <div id="difficulty-screen">
     <h1>⚽ SOCCER</h1>
     <p>Choose difficulty</p>
+    <!-- each button calls startGame() with the chosen difficulty string -->
     <button class="diff-btn easy"   onclick="startGame('easy')">EASY</button>
     <button class="diff-btn medium" onclick="startGame('medium')">MEDIUM</button>
     <button class="diff-btn hard"   onclick="startGame('hard')">HARD</button>
@@ -136,698 +167,964 @@ body { overflow: hidden; background: #111; font-family: Arial; }
 </div>
 
 <script>
-// ─── Canvas ───────────────────────────────────────────────────────────────────
-const canvas = document.getElementById("gameCanvas");
-const ctx    = canvas.getContext("2d");
+// =============================================================================
+// CANVAS SETUP
+// The <canvas> is where all moving game objects are drawn every frame.
+// Its pixel dimensions must match the window size, so we resize it on load
+// and whenever the window is resized.
+// =============================================================================
+const canvas = document.getElementById("gameCanvas"); // grab the canvas element
+const ctx    = canvas.getContext("2d");               // get a 2D drawing context
+
+// sets canvas pixel size to match the current window size
 function resizeCanvas() { canvas.width = innerWidth; canvas.height = innerHeight; }
-resizeCanvas();
-window.addEventListener("resize", resizeCanvas);
+resizeCanvas(); // run once on startup
+window.addEventListener("resize", resizeCanvas); // re-run if the window resizes
 
-const GW = () => innerWidth;
-const GH = () => innerHeight;
+// helper functions so we don't have to type innerWidth/Height everywhere
+const GW = () => innerWidth;   // returns current game width
+const GH = () => innerHeight;  // returns current game height
 
-// ─── Audio ────────────────────────────────────────────────────────────────────
-const AC = new (window.AudioContext || window.webkitAudioContext)();
+// =============================================================================
+// AUDIO
+// All sounds are synthesized with the Web Audio API — no audio files needed.
+// playTone() creates a single oscillator (tone generator) + gain (volume) node,
+// fades the volume to silence over `duration` seconds, then stops the oscillator.
+// =============================================================================
+const AC = new (window.AudioContext || window.webkitAudioContext)(); // audio context (one per page)
 
+// plays a single synthesized tone
+// freq     = pitch in Hz  (e.g. 440 = concert A)
+// type     = wave shape: "sine" (smooth), "sawtooth" (buzzy), "square" (harsh)
+// duration = how long the sound lasts in seconds
+// vol      = initial volume (0–1)
+// delay    = seconds to wait before starting (lets us schedule chords/arpeggios)
 function playTone(freq, type, duration, vol = 0.3, delay = 0) {
-  const o = AC.createOscillator();
-  const g = AC.createGain();
-  o.connect(g); g.connect(AC.destination);
-  o.type = type; o.frequency.value = freq;
-  g.gain.setValueAtTime(vol, AC.currentTime + delay);
-  g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + delay + duration);
-  o.start(AC.currentTime + delay);
-  o.stop(AC.currentTime + delay + duration);
+  const o = AC.createOscillator(); // creates the tone generator
+  const g = AC.createGain();       // creates the volume control
+  o.connect(g);                    // tone → volume
+  g.connect(AC.destination);       // volume → speakers
+  o.type = type;                   // set the wave shape
+  o.frequency.value = freq;        // set the pitch
+  g.gain.setValueAtTime(vol, AC.currentTime + delay);                            // set starting volume
+  g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + delay + duration); // fade to near-silence
+  o.start(AC.currentTime + delay);            // start the tone
+  o.stop(AC.currentTime + delay + duration);  // stop after duration
 }
 
-function soundKick()   { playTone(180, "sine",   0.08, 0.4); playTone(90, "sine", 0.12, 0.2); }
+// short thud sound when a player touches the ball
+function soundKick()   { playTone(180, "sine", 0.08, 0.4); playTone(90, "sine", 0.12, 0.2); }
+
+// rising four-note fanfare played when a goal is scored
 function soundGoal()   {
-  [523,659,784,1047].forEach((f,i) => playTone(f,"sine",0.25,0.5,i*0.12));
-  playTone(200,"sawtooth",0.6,0.15,0.5);
+  [523,659,784,1047].forEach((f,i) => playTone(f,"sine",0.25,0.5,i*0.12)); // ascending notes
+  playTone(200,"sawtooth",0.6,0.15,0.5); // low buzz underneath
 }
+
+// two-tone referee whistle
 function soundWhistle(){ playTone(1200,"sine",0.3,0.4); playTone(1400,"sine",0.2,0.3,0.25); }
+
+// scraping thud for a slide tackle
 function soundTackle() { playTone(120,"sawtooth",0.12,0.5); }
+
+// quick ascending beeps when a powerup is collected
 function soundPowerup(){ [400,600,800].forEach((f,i)=>playTone(f,"sine",0.15,0.4,i*0.08)); }
+
+// high beep for GO!, lower beep for 3/2/1
 function soundCountdown(n) { playTone(n===0?880:660,"sine",0.18,0.5); }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const PLAYER_R   = 22;
-const BALL_R     = 11;
-const GOAL_W     = 22;
-const GOAL_H     = 180;
-const MARGIN     = 8;
-const MATCH_SECS = 120;
-const STAMINA_MAX     = 100;
-const STAMINA_SPRINT  = 0.55;
-const STAMINA_RECOVER = 0.22;
-const SPRINT_MULT     = 1.7;
+// =============================================================================
+// CONSTANTS
+// Fixed numbers used throughout the game. Keeping them here makes it easy to
+// tweak the feel without hunting through the code.
+// =============================================================================
+const PLAYER_R   = 22;   // player circle radius in pixels
+const BALL_R     = 11;   // ball circle radius in pixels
+const GOAL_W     = 22;   // width of the goal posts in pixels
+const GOAL_H     = 180;  // height of the goal opening in pixels
+const MARGIN     = 8;    // gap between field edge and screen edge
 
-// ─── Difficulty presets ───────────────────────────────────────────────────────
+const MATCH_SECS     = 120;  // match length in seconds (2 minutes)
+const STAMINA_MAX    = 100;  // full stamina value
+const STAMINA_SPRINT = 0.55; // stamina drained per frame while sprinting
+const STAMINA_RECOVER= 0.22; // stamina recovered per frame while not sprinting
+const SPRINT_MULT    = 1.7;  // speed multiplier applied when sprinting
+
+// =============================================================================
+// DIFFICULTY PRESETS
+// Each difficulty level has its own AI tuning values.
+// aiAccel  = how quickly an AI player accelerates toward its target
+// aiFric   = velocity multiplier each frame (closer to 1 = slower stopping)
+// aiKick   = how hard field-player AI kicks the ball
+// gkKick   = how hard the goalkeeper kicks the ball
+// gkSpeed  = how fast the goalkeeper tracks the ball vertically
+// =============================================================================
 const DIFF = {
   easy:   { aiAccel: 0.003, aiFric: 0.89, aiKick: 4.5, gkKick: 5,   gkSpeed: 0.05 },
   medium: { aiAccel: 0.006, aiFric: 0.91, aiKick: 6,   gkKick: 7,   gkSpeed: 0.08 },
   hard:   { aiAccel: 0.010, aiFric: 0.93, aiKick: 8,   gkKick: 9,   gkSpeed: 0.12 },
 };
 
-let difficulty = "medium";
+let difficulty = "medium"; // default difficulty, overwritten by startGame()
 
+// human player movement and kick tuning
 const SPEEDS = {
-  userAccel: 0.42, userMaxSpeed: 5.5, userFriction: 0.88,
-  userKickPow: 9,  spaceKickPow: 22,
-  ballFriction: 0.984,
+  userAccel:    0.42,  // acceleration added per frame when a direction key is held
+  userMaxSpeed: 5.5,   // maximum pixels per frame the player can move
+  userFriction: 0.88,  // velocity multiplied by this each frame (deceleration)
+  userKickPow:  9,     // kick power for a normal (non-charged) kick
+  spaceKickPow: 22,    // maximum kick power for a fully charged power shot
+  ballFriction: 0.984, // ball velocity multiplied by this each frame (rolling friction)
 };
 
-// ─── Powerup types ────────────────────────────────────────────────────────────
+// =============================================================================
+// POWERUP TYPES
+// Each object defines one type of pickup that can appear on the field.
+// id       = key used in powerupEffects to track expiry
+// label    = text shown when the powerup is collected
+// color    = fill color of the icon circle on the field
+// duration = how many milliseconds the effect lasts after being picked up
+// =============================================================================
 const POWERUP_TYPES = [
-  { id: "speed",   label: "⚡ SPEED",   color: "#ffd43b", duration: 5000 },
-  { id: "bigball", label: "🔵 BIG BALL",color: "#74c0fc", duration: 6000 },
-  { id: "freeze",  label: "❄️ FREEZE GK",color: "#a5d8ff",duration: 5000 },
+  { id: "speed",   label: "⚡ SPEED",    color: "#ffd43b", duration: 5000 }, // boosts player top speed
+  { id: "bigball", label: "🔵 BIG BALL", color: "#74c0fc", duration: 6000 }, // enlarges the ball
+  { id: "freeze",  label: "❄️ FREEZE GK",color: "#a5d8ff", duration: 5000 }, // freezes both goalkeepers
 ];
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// =============================================================================
+// INPUT
+// `keys` maps a lowercase key name to true (held) or false/missing (not held).
+// We prevent default on arrow keys and space so they don't scroll the page.
+// =============================================================================
 const keys = {};
-document.addEventListener("keydown", e => { keys[e.key.toLowerCase()] = true;  if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())) e.preventDefault(); });
-document.addEventListener("keyup",   e => { keys[e.key.toLowerCase()] = false; });
+document.addEventListener("keydown", e => {
+  keys[e.key.toLowerCase()] = true; // mark key as held
+  // prevent arrow keys and space from scrolling the browser window
+  if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase())) e.preventDefault();
+});
+document.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; }); // mark key as released
 
-let players      = [];
-let scoreBlue    = 0, scoreRed = 0;
-let matchTime    = MATCH_SECS;
-let gameRunning  = false;
-let overtime     = false;
-let frameCount   = 0;
-let stuckFrames  = 0, lastBallX = 0, lastBallY = 0;
+// =============================================================================
+// GAME STATE
+// Top-level variables that track the current state of the match.
+// =============================================================================
+let players     = [];            // array of all player objects (human + AI)
+let scoreBlue   = 0, scoreRed = 0; // current scores for each team
+let matchTime   = MATCH_SECS;    // seconds remaining in the match
+let gameRunning = false;         // false during countdowns, goal animations, etc.
+let overtime    = false;         // true after time runs out and scores are tied
+let frameCount  = 0;             // increments every game loop tick
+let stuckFrames = 0;             // how many frames the ball has barely moved
+let lastBallX   = 0, lastBallY = 0; // ball position last frame (used for stuck detection)
 
-// Ball
-const ball = { x:0,y:0,vx:0,vy:0,rx:0,ry:0,r:BALL_R };
+// the ball: x/y are the physics position, rx/ry are the smoothed render position
+const ball = { x:0, y:0, vx:0, vy:0, rx:0, ry:0, r:BALL_R };
 
-// Confetti
-const confetti = [];
+const confetti = []; // array of active confetti particle objects
 
-// Powerups on field
+// powerups currently visible on the field waiting to be collected
 let activePowerups = [];
-let powerupEffects = {}; // { speed: expiry, bigball: expiry, freeze: expiry }
 
-// Power shot
-let p1Power = 0, p1Charging = false;
+// tracks when each powerup effect expires: { speed: timestamp, bigball: timestamp, freeze: timestamp }
+let powerupEffects = {};
+
+// floating text labels that appear briefly after collecting a powerup
+let powerupLabels = [];
+
+// P1 power-shot charging state
+let p1Power = 0, p1Charging = false; // p1Power 0–100, p1Charging true while SPACE held
+
+// P2 power-shot charging state
 let p2Power = 0, p2Charging = false;
 
-// Stamina
+// current stamina values for P1 and P2 (0–STAMINA_MAX)
 let staminaP1 = STAMINA_MAX, staminaP2 = STAMINA_MAX;
 
-// Tackle state: { player, timer }
+// unused tackle array kept for potential future use
 let tackles = [];
 
-// Match history
+// stores the last 5 match results to show on the difficulty screen
 let matchHistory = [];
 
-// ─── Player factory ───────────────────────────────────────────────────────────
+// =============================================================================
+// PLAYER FACTORY
+// createPlayer() builds a player object and pushes it into the `players` array.
+// Each player has a physics position (x/y), render position (rx/ry),
+// home position (homeX/Y, used by the goalkeeper to know where to return),
+// velocity (vx/vy), and various state flags.
+// =============================================================================
 function createPlayer(x, y, role, team, color, label, isUser=false, isP2=false) {
-  const p = { x,y,rx:x,ry:y,homeX:x,homeY:y, vx:0,vy:0,
-              role,team,color,label,isUser,isP2,
-              tackling:false,tackleTimer:0,
-              frozen:false };
-  players.push(p);
+  const p = {
+    x, y,           // current physics position
+    rx: x, ry: y,   // smoothed render position (lerped toward x/y each frame)
+    homeX: x, homeY: y, // default/home position (goalkeeper stays near this x)
+    vx: 0, vy: 0,   // current velocity
+    role,            // "user", "fwd", "gk", or "p2"
+    team,            // "b" (blue/left) or "r" (red/right)
+    color,           // CSS fill color string
+    label,           // text drawn on the player circle (e.g. "YOU", "GK")
+    isUser,          // true only for the P1 human-controlled player
+    isP2,            // true only for the P2 human-controlled player
+    tackling: false, // true while a slide tackle animation is active
+    tackleTimer: 0,  // countdown frames remaining in the tackle animation
+    frozen: false,   // true while the freeze-GK powerup is active on this player
+  };
+  players.push(p); // add to the global players list
   return p;
 }
 
+// places all players at their kickoff positions
 function spawnPlayers() {
-  players = [];
-  const cy = GH()/2;
-  createPlayer(150,      cy, "user","b","#1971c2","YOU",  true,  false);
-  createPlayer(320,      cy, "fwd", "b","#1c7ed6","BOT",  false, false);
-  createPlayer(55,       cy, "gk",  "b","#7048e8","GK",   false, false);
-  createPlayer(GW()-320, cy, "fwd", "r","#e03131","BOT",  false, false);
-  createPlayer(GW()-100, cy, "gk",  "r","#f59f00","GK",   false, false);
-  // P2 player (red team controlled)
-  createPlayer(GW()-150, cy, "p2",  "r","#c92a2a","P2",   false, true);
+  players = []; // clear any existing players first
+  const cy = GH()/2; // vertical center of the screen
+
+  // blue team (left side)
+  createPlayer(150,      cy, "user","b","#1971c2","YOU", true,  false); // P1 (human)
+  createPlayer(320,      cy, "fwd", "b","#1c7ed6","BOT", false, false); // blue AI forward
+  createPlayer(55,       cy, "gk",  "b","#7048e8","GK",  false, false); // blue goalkeeper
+
+  // red team (right side, positions mirrored)
+  createPlayer(GW()-320, cy, "fwd", "r","#e03131","BOT", false, false); // red AI forward
+  createPlayer(GW()-100, cy, "gk",  "r","#f59f00","GK",  false, false); // red goalkeeper
+  createPlayer(GW()-150, cy, "p2",  "r","#c92a2a","P2",  false, true);  // P2 (human, red team)
 }
 
-// ─── Audio unlock ─────────────────────────────────────────────────────────────
+// =============================================================================
+// AUDIO UNLOCK
+// Browsers block audio until the user has interacted with the page.
+// We resume the AudioContext on the first keypress.
+// =============================================================================
 document.addEventListener("keydown", () => { if(AC.state==="suspended") AC.resume(); }, {once:true});
 
-// ─── Start game ───────────────────────────────────────────────────────────────
+// =============================================================================
+// START GAME
+// Called when the player clicks a difficulty button. Resets all state and
+// starts the 3-2-1-GO countdown before unpausing the game.
+// =============================================================================
 function startGame(diff) {
-  difficulty = diff;
-  document.getElementById("difficulty-screen").style.display = "none";
-  spawnPlayers();
-  resetBall();
-  scoreBlue = scoreRed = 0;
-  matchTime = MATCH_SECS;
-  overtime  = false;
-  gameRunning = false;
-  activePowerups = [];
-  powerupEffects = {};
-  updateScoreHUD();
+  difficulty = diff;  // store the chosen difficulty string
+  document.getElementById("difficulty-screen").style.display = "none"; // hide the menu
+  spawnPlayers();     // place all players at kickoff positions
+  resetBall();        // put the ball in the center with no velocity
+  scoreBlue = scoreRed = 0;  // reset both scores to zero
+  matchTime = MATCH_SECS;    // reset the match timer
+  overtime  = false;         // not in overtime yet
+  gameRunning = false;       // pause physics until countdown finishes
+  activePowerups = [];       // remove any leftover powerups from last match
+  powerupEffects = {};       // clear any active powerup effects
+  updateScoreHUD();          // refresh the score display
+  // start the 3-2-1-GO countdown, then begin the match
   doCountdown(() => {
-    gameRunning = true;
-    soundWhistle();
-    scheduleNextPowerup();
+    gameRunning = true;      // unpause physics
+    soundWhistle();          // play kickoff whistle
+    scheduleNextPowerup();   // start the powerup spawn timer
   });
 }
 
-// ─── Countdown ────────────────────────────────────────────────────────────────
+// =============================================================================
+// COUNTDOWN
+// Shows "3 → 2 → 1 → GO!" in the center of the screen using a repeating
+// interval that fires every 800ms. Calls `cb` once it completes.
+// =============================================================================
 function doCountdown(cb) {
-  const el  = document.getElementById("countdown");
-  const txt = document.getElementById("countdown-text");
-  let n = 3;
-  el.style.opacity = "1";
-  soundCountdown(n);
-  txt.textContent = n;
+  const el  = document.getElementById("countdown");       // the overlay div
+  const txt = document.getElementById("countdown-text");  // the big number text
+  let n = 3;                     // start counting from 3
+  el.style.opacity = "1";        // make the overlay visible
+  soundCountdown(n);             // play the first beep
+  txt.textContent = n;           // show "3"
   const iv = setInterval(() => {
-    n--;
-    if (n > 0) { txt.textContent = n; soundCountdown(n); }
-    else if (n === 0) { txt.textContent = "GO!"; soundCountdown(0); }
-    else { clearInterval(iv); el.style.opacity = "0"; cb(); }
-  }, 800);
+    n--; // decrement the counter each tick
+    if (n > 0)      { txt.textContent = n; soundCountdown(n); }      // show 2, then 1
+    else if (n === 0){ txt.textContent = "GO!"; soundCountdown(0); } // show GO! with high beep
+    else            { clearInterval(iv); el.style.opacity = "0"; cb(); } // hide overlay and start game
+  }, 800); // fires every 800 milliseconds
 }
 
-// ─── Reset ball ───────────────────────────────────────────────────────────────
+// =============================================================================
+// RESET BALL
+// Puts the ball back at the center of the field with zero velocity.
+// Also clears the motion trail so old positions don't show after a goal.
+// =============================================================================
 function resetBall() {
-  ball.x = ball.rx = GW()/2;
-  ball.y = ball.ry = GH()/2;
-  ball.vx = ball.vy = 0;
-  ball.r = BALL_R;
-  trail.length = 0;
+  ball.x = ball.rx = GW()/2; // center horizontally (physics + render positions)
+  ball.y = ball.ry = GH()/2; // center vertically
+  ball.vx = ball.vy = 0;     // stop all movement
+  ball.r = BALL_R;            // reset radius (in case bigball powerup was active)
+  trail.length = 0;           // clear the motion trail history
 }
 
-// ─── Trail ────────────────────────────────────────────────────────────────────
-const trail = [];
-const TRAIL_MAX = 28;
+// =============================================================================
+// TRAIL
+// Keeps a short history of the ball's recent render positions.
+// drawTrail() uses this to draw a fading blue/white streak behind the ball
+// when it's moving fast enough. The trail is purely cosmetic.
+// =============================================================================
+const trail    = [];        // ring buffer of { x, y } positions
+const TRAIL_MAX = 28;       // maximum number of trail positions to keep
 
+// called each frame: prepends the current ball position to the trail
 function updateTrail() {
-  trail.unshift({ x: ball.rx, y: ball.ry });
-  if (trail.length > TRAIL_MAX) trail.pop();
+  trail.unshift({ x: ball.rx, y: ball.ry }); // add newest position at front
+  if (trail.length > TRAIL_MAX) trail.pop();  // remove oldest if over the limit
 }
 
+// draws the trail dots and a glow at the ball's current position
 function drawTrail() {
-  const speed = Math.hypot(ball.vx, ball.vy);
-  if (speed < 0.8) return;
+  const speed = Math.hypot(ball.vx, ball.vy); // current ball speed
+  if (speed < 0.8) return; // skip drawing if the ball is barely moving
+
+  // draw each trail dot, oldest first (so newer dots paint over them)
   for (let i = trail.length-1; i >= 0; i--) {
-    const t = i / TRAIL_MAX;
-    const alpha = (1-t) * 0.65 * Math.min(speed/4,1);
-    const r = Math.max(1, ball.r * (1 - t*0.82));
-    const red = Math.round(255*(1-t*0.9));
-    const grn = Math.round(220*(1-t*0.5));
+    const t     = i / TRAIL_MAX;               // 0=newest, 1=oldest
+    const alpha = (1-t) * 0.65 * Math.min(speed/4,1); // older = more transparent
+    const r     = Math.max(1, ball.r * (1 - t*0.82));  // older = smaller dot
+    const red   = Math.round(255*(1-t*0.9));   // older dots shift from white to blue
+    const grn   = Math.round(220*(1-t*0.5));   // green channel also fades
     ctx.beginPath();
-    ctx.arc(trail[i].x, trail[i].y, r, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(${red},${grn},255,${alpha.toFixed(3)})`;
+    ctx.arc(trail[i].x, trail[i].y, r, 0, Math.PI*2); // draw circle at trail position
+    ctx.fillStyle = `rgba(${red},${grn},255,${alpha.toFixed(3)})`; // white→blue gradient
     ctx.fill();
   }
+
+  // draw a soft radial glow at the ball's current (newest trail) position
   if (trail.length > 0) {
-    const g = ctx.createRadialGradient(trail[0].x,trail[0].y,0,trail[0].x,trail[0].y,ball.r*2.5);
-    g.addColorStop(0,`rgba(180,230,255,${Math.min(speed/6,0.55).toFixed(3)})`);
-    g.addColorStop(1,"rgba(100,180,255,0)");
+    const g = ctx.createRadialGradient(trail[0].x,trail[0].y,0, trail[0].x,trail[0].y,ball.r*2.5);
+    g.addColorStop(0, `rgba(180,230,255,${Math.min(speed/6,0.55).toFixed(3)})`); // bright center
+    g.addColorStop(1, "rgba(100,180,255,0)"); // transparent edge
     ctx.beginPath();
-    ctx.arc(trail[0].x,trail[0].y,ball.r*2.5,0,Math.PI*2);
+    ctx.arc(trail[0].x, trail[0].y, ball.r*2.5, 0, Math.PI*2);
     ctx.fillStyle = g; ctx.fill();
   }
 }
 
-// ─── Confetti ─────────────────────────────────────────────────────────────────
+// =============================================================================
+// CONFETTI
+// A simple particle system for goal celebrations. Each particle is a small
+// coloured rectangle that flies outward, falls under gravity, rotates, and
+// fades out over time. spawnConfetti() creates 120 particles at the given
+// position; updateConfetti() moves them; drawConfetti() renders them.
+// =============================================================================
 function spawnConfetti(cx, cy) {
-  const COLORS = ["#ffd43b","#ff6b6b","#74c0fc","#a9e34b","#f783ac","#fff"];
-  for (let i = 0; i < 120; i++) {
-    const angle = Math.random()*Math.PI*2;
-    const speed = 2 + Math.random()*8;
+  const COLORS = ["#ffd43b","#ff6b6b","#74c0fc","#a9e34b","#f783ac","#fff"]; // palette
+  for (let i = 0; i < 120; i++) { // spawn 120 particles
+    const angle = Math.random()*Math.PI*2; // random launch direction
+    const speed = 2 + Math.random()*8;     // random launch speed
     confetti.push({
-      x: cx, y: cy,
-      vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed - 4,
-      w: 6+Math.random()*8, h: 4+Math.random()*5,
-      rot: Math.random()*Math.PI, rotV: (Math.random()-0.5)*0.3,
-      color: COLORS[Math.floor(Math.random()*COLORS.length)],
-      life: 1, decay: 0.012+Math.random()*0.01
+      x: cx, y: cy,                              // start at the ball's position
+      vx: Math.cos(angle)*speed,                 // horizontal velocity
+      vy: Math.sin(angle)*speed - 4,             // vertical velocity (bias upward)
+      w: 6+Math.random()*8,                      // random width
+      h: 4+Math.random()*5,                      // random height
+      rot:  Math.random()*Math.PI,               // starting rotation angle
+      rotV: (Math.random()-0.5)*0.3,             // rotation speed (clockwise or counter)
+      color: COLORS[Math.floor(Math.random()*COLORS.length)], // random colour
+      life: 1,                                   // starts fully opaque
+      decay: 0.012+Math.random()*0.01,           // how fast it fades (random rate)
     });
   }
 }
 
+// moves and fades all active confetti particles each frame
 function updateConfetti() {
   for (let i = confetti.length-1; i >= 0; i--) {
     const c = confetti[i];
-    c.x += c.vx; c.y += c.vy; c.vy += 0.18;
-    c.vx *= 0.98; c.rot += c.rotV; c.life -= c.decay;
-    if (c.life <= 0) confetti.splice(i,1);
+    c.x   += c.vx;   // move horizontally
+    c.y   += c.vy;   // move vertically
+    c.vy  += 0.18;   // gravity pulls it downward
+    c.vx  *= 0.98;   // slight air resistance on horizontal movement
+    c.rot += c.rotV; // spin the particle
+    c.life -= c.decay; // reduce opacity
+    if (c.life <= 0) confetti.splice(i,1); // remove fully faded particles
   }
 }
 
+// draws all confetti particles using save/restore so transforms don't leak
 function drawConfetti() {
   for (const c of confetti) {
-    ctx.save();
-    ctx.translate(c.x, c.y);
-    ctx.rotate(c.rot);
-    ctx.globalAlpha = c.life;
+    ctx.save();               // save current transform state
+    ctx.translate(c.x, c.y); // move origin to particle position
+    ctx.rotate(c.rot);        // rotate the canvas for this particle
+    ctx.globalAlpha = c.life; // set opacity (fades out as life decreases)
     ctx.fillStyle = c.color;
-    ctx.fillRect(-c.w/2, -c.h/2, c.w, c.h);
-    ctx.restore();
+    ctx.fillRect(-c.w/2, -c.h/2, c.w, c.h); // draw centered rectangle
+    ctx.restore();            // restore transform state for next particle
   }
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = 1; // reset global opacity so other drawing isn't affected
 }
 
-// ─── Powerups ─────────────────────────────────────────────────────────────────
+// =============================================================================
+// POWERUPS
+// Powerups appear on the field at random positions every 8-15 seconds.
+// Walking over one activates its effect for a fixed duration.
+// scheduleNextPowerup() uses setTimeout to recursively schedule spawns.
+// =============================================================================
+
+// schedules the next powerup to appear after a random delay (8–15 seconds)
 function scheduleNextPowerup() {
-  if (!gameRunning) return;
+  if (!gameRunning) return; // don't schedule if the game has ended
   setTimeout(() => {
-    if (!gameRunning) return;
-    const type = POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)];
+    if (!gameRunning) return; // double-check in case match ended during the wait
+    const type = POWERUP_TYPES[Math.floor(Math.random()*POWERUP_TYPES.length)]; // random type
     const pu = {
-      x: 150 + Math.random()*(GW()-300),
-      y: 80  + Math.random()*(GH()-160),
-      type, pulse: 0
+      x: 150 + Math.random()*(GW()-300), // random x, avoiding the very edges
+      y: 80  + Math.random()*(GH()-160), // random y, avoiding the very edges
+      type,     // reference to the POWERUP_TYPES entry
+      pulse: 0, // animation phase for the pulsing scale effect
     };
-    activePowerups.push(pu);
-    scheduleNextPowerup();
-  }, 8000 + Math.random()*7000);
+    activePowerups.push(pu); // add to the list of visible powerups
+    scheduleNextPowerup();   // schedule the next one (recursive)
+  }, 8000 + Math.random()*7000); // wait 8–15 seconds
 }
 
+// checks each frame if any player has walked over a powerup
 function checkPowerupCollisions() {
   for (let i = activePowerups.length-1; i >= 0; i--) {
     const pu = activePowerups[i];
     for (const p of players) {
-      const dist = Math.hypot(p.x - pu.x, p.y - pu.y);
-      if (dist < PLAYER_R + 20) {
-        soundPowerup();
-        powerupEffects[pu.type.id] = Date.now() + pu.type.duration;
-        activePowerups.splice(i,1);
-        showPowerupLabel(pu.type.label, pu.x, pu.y);
-        break;
+      const dist = Math.hypot(p.x - pu.x, p.y - pu.y); // distance from player to powerup
+      if (dist < PLAYER_R + 20) { // player circle overlaps the powerup circle
+        soundPowerup(); // play collection sound
+        powerupEffects[pu.type.id] = Date.now() + pu.type.duration; // set expiry timestamp
+        activePowerups.splice(i,1); // remove powerup from the field
+        showPowerupLabel(pu.type.label, pu.x, pu.y); // show floating label
+        break; // only one player can collect it
       }
     }
   }
 }
 
-let powerupLabels = [];
+// adds a floating label (e.g. "⚡ SPEED") that drifts upward and fades out
 function showPowerupLabel(text, x, y) {
-  powerupLabels.push({ text, x, y, life: 1.5 });
+  powerupLabels.push({ text, x, y, life: 1.5 }); // life > 1 so it starts fully visible
 }
 
+// draws all powerup icons on the field and any floating pickup labels
 function drawPowerups() {
-  const now = Date.now();
   for (const pu of activePowerups) {
-    pu.pulse += 0.07;
-    const s = 1 + Math.sin(pu.pulse)*0.12;
+    pu.pulse += 0.07; // increment animation phase each frame
+    const s = 1 + Math.sin(pu.pulse)*0.12; // scale oscillates between 0.88 and 1.12
+
     ctx.save();
-    ctx.translate(pu.x, pu.y);
-    ctx.scale(s,s);
+    ctx.translate(pu.x, pu.y); // move origin to powerup center
+    ctx.scale(s, s);            // apply pulsing scale
     ctx.beginPath();
-    ctx.arc(0,0,20,0,Math.PI*2);
+    ctx.arc(0, 0, 20, 0, Math.PI*2); // draw the icon circle
     ctx.fillStyle = pu.type.color;
     ctx.globalAlpha = 0.9;
     ctx.fill();
-    ctx.strokeStyle = "#fff";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke(); // white border
     ctx.globalAlpha = 1;
-    ctx.font = "bold 13px Arial";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#222";
+    ctx.font = "bold 13px Arial"; ctx.textAlign = "center"; ctx.fillStyle = "#222";
+    // draw the icon character (⚡, ●, or ❄) in the center of the circle
     ctx.fillText(pu.type.id === "speed" ? "⚡" : pu.type.id === "bigball" ? "●" : "❄", 0, 5);
     ctx.restore();
   }
 
-  // floating labels
+  // draw and update floating pickup labels
   for (let i = powerupLabels.length-1; i >= 0; i--) {
     const lb = powerupLabels[i];
-    lb.y -= 0.8; lb.life -= 0.02;
-    if (lb.life <= 0) { powerupLabels.splice(i,1); continue; }
-    ctx.globalAlpha = Math.min(lb.life, 1);
-    ctx.font = "bold 18px Arial";
-    ctx.textAlign = "center";
-    ctx.fillStyle = "#ffd43b";
+    lb.y    -= 0.8;  // drift upward each frame
+    lb.life -= 0.02; // fade out each frame
+    if (lb.life <= 0) { powerupLabels.splice(i,1); continue; } // remove when fully faded
+    ctx.globalAlpha = Math.min(lb.life, 1); // clamp opacity to 1 max
+    ctx.font = "bold 18px Arial"; ctx.textAlign = "center"; ctx.fillStyle = "#ffd43b";
     ctx.fillText(lb.text, lb.x, lb.y);
   }
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = 1; // reset opacity
 }
 
+// applies currently-active powerup effects to game objects each frame
 function applyPowerupEffects() {
-  const now = Date.now();
-  // big ball
+  const now = Date.now(); // current timestamp in milliseconds
+  // bigball: enlarge the ball radius if the effect hasn't expired
   ball.r = (powerupEffects.bigball && now < powerupEffects.bigball) ? BALL_R*2.2 : BALL_R;
-  // freeze GK
+  // freeze: set frozen=true on all goalkeepers if the effect is active
   for (const p of players) {
     if (p.role === "gk") p.frozen = !!(powerupEffects.freeze && now < powerupEffects.freeze);
   }
 }
 
-// ─── Kick ─────────────────────────────────────────────────────────────────────
+// =============================================================================
+// BALL KICKING
+// kickBall() checks if a player is close enough to the ball and if so,
+// sends it flying in the direction from player → ball, with a small random
+// angle spread so kicks aren't perfectly straight.
+// =============================================================================
 function kickBall(p, power) {
-  const dx = ball.x - p.x, dy = ball.y - p.y;
-  const dist = Math.hypot(dx,dy);
-  if (dist < PLAYER_R + ball.r + 2) {
-    soundKick();
-    const angle = Math.atan2(dy,dx) + (Math.random()-0.5)*0.22;
-    ball.vx = Math.cos(angle)*power;
-    ball.vy = Math.sin(angle)*power;
+  const dx   = ball.x - p.x;          // x distance from player center to ball center
+  const dy   = ball.y - p.y;          // y distance
+  const dist = Math.hypot(dx, dy);    // total distance between centers
+  if (dist < PLAYER_R + ball.r + 2) { // within kick range
+    soundKick(); // play kick sound
+    // atan2 gives the angle from player to ball; add random spread (±0.11 radians)
+    const angle = Math.atan2(dy, dx) + (Math.random()-0.5)*0.22;
+    ball.vx = Math.cos(angle) * power; // apply horizontal kick velocity
+    ball.vy = Math.sin(angle) * power; // apply vertical kick velocity
   }
 }
 
-// ─── Tackle ───────────────────────────────────────────────────────────────────
+// =============================================================================
+// TACKLE
+// doTackle() starts a slide tackle animation on a player (yellow ring for 22 frames)
+// and if the ball is nearby, kicks it away at high speed.
+// =============================================================================
 function doTackle(p) {
-  if (p.tackling) return;
-  soundTackle();
-  p.tackling = true; p.tackleTimer = 22;
-  const dx = ball.x - p.x, dy = ball.y - p.y;
-  const dist = Math.hypot(dx,dy);
-  if (dist < PLAYER_R*2 + ball.r) {
-    const angle = Math.atan2(dy,dx);
-    ball.vx = Math.cos(angle)*10;
+  if (p.tackling) return; // can't tackle again while already tackling
+  soundTackle();           // play tackle sound
+  p.tackling = true;       // activate tackle state (shows yellow ring when drawing)
+  p.tackleTimer = 22;      // tackle animation lasts 22 frames (~0.37 seconds at 60fps)
+  const dx   = ball.x - p.x;
+  const dy   = ball.y - p.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < PLAYER_R*2 + ball.r) { // ball is within tackle reach
+    const angle = Math.atan2(dy, dx); // angle from player to ball
+    ball.vx = Math.cos(angle)*10;     // kick the ball away at power 10
     ball.vy = Math.sin(angle)*10;
   }
 }
 
+// counts down tackle timers each frame and clears the tackling flag when done
 function updateTackles() {
   for (const p of players) {
     if (p.tackling) {
-      p.tackleTimer--;
-      if (p.tackleTimer <= 0) p.tackling = false;
+      p.tackleTimer--;                              // count down
+      if (p.tackleTimer <= 0) p.tackling = false;  // end tackle when timer hits 0
     }
   }
 }
 
-// ─── AI ───────────────────────────────────────────────────────────────────────
+// =============================================================================
+// AI UPDATE
+// updateAI() runs every frame for each non-human player.
+// Goalkeepers track the ball vertically and kick it away when in range.
+// Forwards approach the ball at a slight angle (to avoid head-on stalemates)
+// and kick it toward the goal. Hard AI occasionally tackles.
+// =============================================================================
 function updateAI(p) {
-  if (p.frozen) return;
-  const D = DIFF[difficulty];
-  let tx = p.homeX, ty = p.homeY;
+  if (p.frozen) return; // frozen goalkeepers do nothing
+  const D = DIFF[difficulty]; // get the current difficulty settings
+  let tx = p.homeX, ty = p.homeY; // default target is the player's home position
 
   if (p.role === "gk") {
-    p.vy += (ball.y - p.y) * D.gkSpeed;
-    p.vy *= 0.85; p.y += p.vy;
-    p.x = p.homeX;
-    kickBall(p, D.gkKick); return;
+    // goalkeeper: track ball vertically, stay locked at home x
+    p.vy += (ball.y - p.y) * D.gkSpeed; // accelerate toward ball's y
+    p.vy *= 0.85;    // friction slows vertical movement
+    p.y  += p.vy;   // update position
+    p.x   = p.homeX; // always snap back to home x (can't leave the goal area)
+    kickBall(p, D.gkKick); // kick ball away if in range
+    return;
   }
+
   if (p.role === "fwd") {
-    const angle = Math.atan2(ball.y-p.y, ball.x-p.x);
-    const side  = (p.team==="b"?1:-1)*28;
-    tx = ball.x + Math.cos(angle+Math.PI/2)*side;
-    ty = ball.y + Math.sin(angle+Math.PI/2)*side;
-    // Hard AI occasionally tackles
-    if (difficulty==="hard" && Math.random()<0.004) doTackle(p);
+    // forward: approach the ball at a slight perpendicular angle to avoid deadlocks
+    const angle = Math.atan2(ball.y-p.y, ball.x-p.x); // direct angle to ball
+    const side  = (p.team==="b" ? 1 : -1) * 28;       // offset 28px perpendicular
+    tx = ball.x + Math.cos(angle + Math.PI/2) * side;  // target slightly to the side
+    ty = ball.y + Math.sin(angle + Math.PI/2) * side;
+    if (difficulty==="hard" && Math.random()<0.004) doTackle(p); // 0.4% chance to tackle per frame on hard
   }
-  p.vx += (tx-p.x)*D.aiAccel;
-  p.vy += (ty-p.y)*D.aiAccel;
-  p.vx *= D.aiFric; p.vy *= D.aiFric;
-  p.x += p.vx; p.y += p.vy;
-  kickBall(p, D.aiKick);
+
+  // steering: accelerate toward target, apply friction, move
+  p.vx += (tx - p.x) * D.aiAccel; // accelerate horizontally toward target
+  p.vy += (ty - p.y) * D.aiAccel; // accelerate vertically toward target
+  p.vx *= D.aiFric; // apply friction
+  p.vy *= D.aiFric;
+  p.x  += p.vx;    // update position
+  p.y  += p.vy;
+  kickBall(p, D.aiKick); // kick ball if in range
 }
 
-// ─── User (P1) ────────────────────────────────────────────────────────────────
+// =============================================================================
+// PLAYER 1 UPDATE
+// updateUser() reads keyboard input and moves the human player each frame.
+// SHIFT sprints (drains stamina, boosts speed, triggers tackle on keydown).
+// SPACE held charges a power shot; released fires it.
+// Without SPACE, a normal kick fires automatically on contact.
+// =============================================================================
 function updateUser(p) {
-  const sprinting = keys["shift"] && staminaP1 > 0;
-  const mult = sprinting ? SPRINT_MULT : 1;
+  const sprinting = keys["shift"] && staminaP1 > 0; // sprinting if SHIFT held and stamina available
+  const mult = sprinting ? SPRINT_MULT : 1;           // speed multiplier
 
-  if (sprinting) staminaP1 = Math.max(0, staminaP1 - STAMINA_SPRINT);
-  else           staminaP1 = Math.min(STAMINA_MAX, staminaP1 + STAMINA_RECOVER);
+  // update stamina
+  if (sprinting) staminaP1 = Math.max(0, staminaP1 - STAMINA_SPRINT);    // drain while sprinting
+  else           staminaP1 = Math.min(STAMINA_MAX, staminaP1 + STAMINA_RECOVER); // recover otherwise
 
-  if (keys["w"]||keys["arrowup"])    p.vy -= SPEEDS.userAccel*mult;
-  if (keys["s"]||keys["arrowdown"])  p.vy += SPEEDS.userAccel*mult;
-  if (keys["a"]||keys["arrowleft"])  p.vx -= SPEEDS.userAccel*mult;
-  if (keys["d"]||keys["arrowright"]) p.vx += SPEEDS.userAccel*mult;
+  // apply movement from WASD or arrow keys
+  if (keys["w"] || keys["arrowup"])    p.vy -= SPEEDS.userAccel * mult; // move up
+  if (keys["s"] || keys["arrowdown"])  p.vy += SPEEDS.userAccel * mult; // move down
+  if (keys["a"] || keys["arrowleft"])  p.vx -= SPEEDS.userAccel * mult; // move left
+  if (keys["d"] || keys["arrowright"]) p.vx += SPEEDS.userAccel * mult; // move right
 
-  // Speed powerup
+  // check if the speed powerup is active and apply its bonus
   const spMult = (powerupEffects.speed && Date.now() < powerupEffects.speed) ? 1.5 : 1;
-  p.vx *= SPEEDS.userFriction; p.vy *= SPEEDS.userFriction;
-  const ms = SPEEDS.userMaxSpeed * spMult;
-  p.x += Math.max(-ms, Math.min(ms, p.vx));
-  p.y += Math.max(-ms, Math.min(ms, p.vy));
+  p.vx *= SPEEDS.userFriction; // apply friction
+  p.vy *= SPEEDS.userFriction;
+  const ms = SPEEDS.userMaxSpeed * spMult; // max speed (boosted if powerup active)
+  p.x += Math.max(-ms, Math.min(ms, p.vx)); // clamp and apply horizontal movement
+  p.y += Math.max(-ms, Math.min(ms, p.vy)); // clamp and apply vertical movement
 
-  // Tackle
+  // SHIFT also triggers a tackle if not already tackling and stamina is sufficient
   if (keys["shift"] && !p.tackling && staminaP1 > 20) doTackle(p);
 
-  // Power shot
+  // power shot: hold SPACE to charge, release to fire
   if (keys[" "]) {
-    p1Charging = true;
-    p1Power = Math.min(p1Power + 1.8, 100);
-    document.getElementById("powerbar").style.display = "block";
-    document.getElementById("powerbar-fill").style.width = p1Power+"%";
+    p1Charging = true;                                       // start charging
+    p1Power = Math.min(p1Power + 1.8, 100);                 // increase power up to 100
+    document.getElementById("powerbar").style.display = "block";           // show charge bar
+    document.getElementById("powerbar-fill").style.width = p1Power + "%"; // update fill width
   } else if (p1Charging) {
-    const power = SPEEDS.spaceKickPow * (0.5 + p1Power/100 * 0.5);
+    // SPACE just released — fire the shot at scaled power
+    const power = SPEEDS.spaceKickPow * (0.5 + p1Power/100 * 0.5); // 50%–100% of max power
     kickBall(p, power);
-    p1Charging = false; p1Power = 0;
-    document.getElementById("powerbar").style.display = "none";
+    p1Charging = false; p1Power = 0;                                // reset charging state
+    document.getElementById("powerbar").style.display = "none";    // hide charge bar
     document.getElementById("powerbar-fill").style.width = "0%";
   } else {
-    kickBall(p, SPEEDS.userKickPow);
+    kickBall(p, SPEEDS.userKickPow); // normal contact kick when SPACE not involved
   }
 
-  document.getElementById("sf1").style.width = staminaP1+"%";
+  document.getElementById("sf1").style.width = staminaP1 + "%"; // update stamina bar display
 }
 
-// ─── P2 (human) ───────────────────────────────────────────────────────────────
+// =============================================================================
+// PLAYER 2 UPDATE
+// Same structure as updateUser() but reads IJKL for movement, O for kick,
+// P for sprint/tackle. P2 is on the red team.
+// =============================================================================
 function updateP2(p) {
-  const sprinting = keys["p"] && staminaP2 > 0;
+  const sprinting = keys["p"] && staminaP2 > 0; // sprint if P held and stamina available
   const mult = sprinting ? SPRINT_MULT : 1;
-  if (sprinting) staminaP2 = Math.max(0, staminaP2 - STAMINA_SPRINT);
-  else           staminaP2 = Math.min(STAMINA_MAX, staminaP2 + STAMINA_RECOVER);
+  if (sprinting) staminaP2 = Math.max(0, staminaP2 - STAMINA_SPRINT);    // drain stamina
+  else           staminaP2 = Math.min(STAMINA_MAX, staminaP2 + STAMINA_RECOVER); // recover
 
-  if (keys["i"]) p.vy -= SPEEDS.userAccel*mult;
-  if (keys["k"]) p.vy += SPEEDS.userAccel*mult;
-  if (keys["j"]) p.vx -= SPEEDS.userAccel*mult;
-  if (keys["l"]) p.vx += SPEEDS.userAccel*mult;
+  if (keys["i"]) p.vy -= SPEEDS.userAccel * mult; // move up
+  if (keys["k"]) p.vy += SPEEDS.userAccel * mult; // move down
+  if (keys["j"]) p.vx -= SPEEDS.userAccel * mult; // move left
+  if (keys["l"]) p.vx += SPEEDS.userAccel * mult; // move right
 
-  p.vx *= SPEEDS.userFriction; p.vy *= SPEEDS.userFriction;
+  p.vx *= SPEEDS.userFriction; // apply friction
+  p.vy *= SPEEDS.userFriction;
   const ms = SPEEDS.userMaxSpeed;
-  p.x += Math.max(-ms,Math.min(ms,p.vx));
-  p.y += Math.max(-ms,Math.min(ms,p.vy));
+  p.x += Math.max(-ms, Math.min(ms, p.vx)); // clamp and apply movement
+  p.y += Math.max(-ms, Math.min(ms, p.vy));
 
-  if (keys["p"] && !p.tackling && staminaP2 > 20) doTackle(p);
+  if (keys["p"] && !p.tackling && staminaP2 > 20) doTackle(p); // P also triggers tackle
 
+  // O held = charge shot, O released = fire
   if (keys["o"]) {
     p2Charging = true;
-    p2Power = Math.min(p2Power+1.8,100);
+    p2Power = Math.min(p2Power + 1.8, 100);
   } else if (p2Charging) {
-    const power = SPEEDS.spaceKickPow*(0.5+p2Power/100*0.5);
+    const power = SPEEDS.spaceKickPow * (0.5 + p2Power/100 * 0.5);
     kickBall(p, power);
-    p2Charging=false; p2Power=0;
+    p2Charging = false; p2Power = 0;
   } else {
-    kickBall(p, SPEEDS.userKickPow);
+    kickBall(p, SPEEDS.userKickPow); // normal kick on contact
   }
-  document.getElementById("sf2").style.width = staminaP2+"%";
+  document.getElementById("sf2").style.width = staminaP2 + "%"; // update P2 stamina bar
 }
 
-// ─── Goal / reset ─────────────────────────────────────────────────────────────
-let goalCooldown = 0;
+// =============================================================================
+// GOAL DETECTION
+// checkGoals() runs each frame. It checks whether the ball has crossed either
+// goal line within the vertical goal opening. If so, it increments the score,
+// plays sounds, spawns confetti, and starts the post-goal reset sequence.
+// goalCooldown prevents multiple goals being registered from a single shot.
+// =============================================================================
+let goalCooldown = 0; // frames remaining before goals can be detected again
 
 function checkGoals() {
-  if (goalCooldown > 0) { goalCooldown--; return; }
-  const top = GH()/2 - GOAL_H/2, bot = GH()/2 + GOAL_H/2;
+  if (goalCooldown > 0) { goalCooldown--; return; } // skip if in cooldown
+  const top = GH()/2 - GOAL_H/2; // top edge of the goal opening
+  const bot = GH()/2 + GOAL_H/2; // bottom edge of the goal opening
 
   let scorer = null;
+  // ball left edge past the left goal line and within the goal height → red scored
   if (ball.x - ball.r < GOAL_W + MARGIN && ball.y > top && ball.y < bot) scorer = "red";
+  // ball right edge past the right goal line and within the goal height → blue scored
   if (ball.x + ball.r > GW()-GOAL_W-MARGIN && ball.y > top && ball.y < bot) scorer = "blue";
-  if (!scorer) return;
+  if (!scorer) return; // no goal this frame
 
+  // increment the correct team's score and update the HUD
   if (scorer==="red")  { scoreRed++;  document.getElementById("score-red").textContent  = scoreRed; }
   if (scorer==="blue") { scoreBlue++; document.getElementById("score-blue").textContent = scoreBlue; }
 
-  soundGoal();
-  spawnConfetti(ball.rx, ball.ry);
-  showGoalSplash(scorer);
-  resetBall();
-  goalCooldown = 120;
-  gameRunning = false;
+  soundGoal();                    // play goal fanfare
+  spawnConfetti(ball.rx, ball.ry); // burst of confetti at the ball's position
+  showGoalSplash(scorer);          // show "GOAL!" overlay in team colour
+  resetBall();                     // return ball to center
+  goalCooldown = 120;              // 120 frame cooldown (~2 seconds) before next goal
+  gameRunning = false;             // pause physics during the celebration
+
+  // after 1.8 seconds, run the kickoff countdown and resume play
   setTimeout(() => {
     doCountdown(() => { gameRunning = true; soundWhistle(); });
   }, 1800);
 }
 
+// shows the "GOAL!" splash in the scoring team's colour, then fades it out
 function showGoalSplash(team) {
   const el   = document.getElementById("goal-splash");
   const txt  = document.getElementById("goal-text");
-  const colors = { blue:"#4dabf7", red:"#ff6b6b" };
-  txt.style.color = colors[team] || "#fff";
-  el.style.opacity = "1";
-  setTimeout(() => { el.style.opacity = "0"; }, 1600);
+  const colors = { blue:"#4dabf7", red:"#ff6b6b" }; // blue or red colour
+  txt.style.color = colors[team] || "#fff"; // apply team colour to the text
+  el.style.opacity = "1";                   // make the overlay visible
+  setTimeout(() => { el.style.opacity = "0"; }, 1600); // fade out after 1.6 seconds
 }
 
+// refreshes both score number displays in the HUD
 function updateScoreHUD() {
   document.getElementById("score-blue").textContent = scoreBlue;
   document.getElementById("score-red").textContent  = scoreRed;
 }
 
-// ─── Timer ────────────────────────────────────────────────────────────────────
-let lastSecond = Date.now();
+// =============================================================================
+// MATCH TIMER
+// updateTimer() is called each frame while the game is running.
+// It uses Date.now() to detect when a real second has passed, then decrements
+// matchTime. When it hits zero, either the match ends (if scores differ) or
+// overtime begins (if scores are tied, next goal wins).
+// =============================================================================
+let lastSecond = Date.now(); // timestamp of the last time a second ticked
+
 function updateTimer() {
-  if (!gameRunning) return;
+  if (!gameRunning) return; // don't tick the timer during countdowns or goal animations
   const now = Date.now();
-  if (now - lastSecond >= 1000) {
+  if (now - lastSecond >= 1000) { // a full second has passed
     lastSecond = now;
-    matchTime--;
+    matchTime--;  // subtract one second
     if (matchTime <= 0) {
       matchTime = 0;
-      if (scoreBlue !== scoreRed) {
+      if (scoreBlue !== scoreRed) { // scores differ → someone wins
         endMatch();
-      } else {
+      } else { // tied → sudden death overtime
         overtime = true;
         document.getElementById("timer").textContent = "⚡ OVERTIME";
       }
     }
+    // update the timer display (e.g. "1:45") while not in overtime
     if (!overtime && matchTime >= 0) {
-      const m = Math.floor(matchTime/60);
-      const s = matchTime%60;
-      document.getElementById("timer").textContent = m+":"+(s<10?"0":"")+s;
-      if (matchTime <= 10) document.getElementById("timer").style.color = "#ff6b6b";
+      const m = Math.floor(matchTime/60);  // whole minutes remaining
+      const s = matchTime % 60;            // remaining seconds
+      document.getElementById("timer").textContent = m + ":" + (s<10?"0":"") + s;
+      if (matchTime <= 10) document.getElementById("timer").style.color = "#ff6b6b"; // turn red for last 10s
     }
   }
 }
 
+// shows the winner screen, plays the final whistle, and returns to the menu
 function endMatch() {
-  gameRunning = false;
-  soundWhistle();
-  const winner = scoreBlue > scoreRed ? "BLUE WINS!" : "RED WINS!";
+  gameRunning = false;  // stop physics
+  soundWhistle();       // final whistle
+  const winner = scoreBlue > scoreRed ? "BLUE WINS!" : "RED WINS!"; // determine winner text
   const el = document.getElementById("goal-text");
   el.textContent = winner;
-  el.style.color = scoreBlue > scoreRed ? "#4dabf7" : "#ff6b6b";
-  el.style.fontSize = "64px";
-  document.getElementById("goal-splash").style.opacity = "1";
-  spawnConfetti(GW()/2, GH()/2);
-  matchHistory.push({ blue: scoreBlue, red: scoreRed, diff: difficulty });
+  el.style.color = scoreBlue > scoreRed ? "#4dabf7" : "#ff6b6b"; // team colour
+  el.style.fontSize = "64px"; // slightly smaller than "GOAL!" to fit longer text
+  document.getElementById("goal-splash").style.opacity = "1"; // show overlay
+  spawnConfetti(GW()/2, GH()/2); // confetti burst in the center
+  matchHistory.push({ blue: scoreBlue, red: scoreRed, diff: difficulty }); // save result
+
+  // after 4 seconds, hide the splash and show the difficulty menu again
   setTimeout(() => {
     document.getElementById("goal-splash").style.opacity = "0";
-    el.style.fontSize = "96px";
-    el.textContent = "GOAL!";
-    document.getElementById("difficulty-screen").style.display = "flex";
-    document.getElementById("timer").style.color = "#fff";
+    el.style.fontSize = "96px";     // reset font size for next "GOAL!" display
+    el.textContent = "GOAL!";       // reset text
+    document.getElementById("difficulty-screen").style.display = "flex"; // show menu
+    document.getElementById("timer").style.color = "#fff"; // reset timer colour
   }, 4000);
 }
 
-// ─── Clamping ─────────────────────────────────────────────────────────────────
+// =============================================================================
+// BOUNDARY CLAMPING
+// These functions keep the ball and players inside the visible field area.
+// The ball bounces off walls (velocity reversed with some energy loss).
+// Players are simply prevented from moving outside the field.
+// =============================================================================
+
+// keeps the ball inside the field boundaries, bouncing off walls
 function clampBall() {
-  const minX=MARGIN+ball.r, maxX=GW()-MARGIN-ball.r;
-  const minY=MARGIN+ball.r, maxY=GH()-MARGIN-ball.r;
-  if(ball.x<minX){ball.x=minX;ball.vx= Math.abs(ball.vx)*0.7;}
-  if(ball.x>maxX){ball.x=maxX;ball.vx=-Math.abs(ball.vx)*0.7;}
-  if(ball.y<minY){ball.y=minY;ball.vy= Math.abs(ball.vy)*0.7;}
-  if(ball.y>maxY){ball.y=maxY;ball.vy=-Math.abs(ball.vy)*0.7;}
+  const minX = MARGIN + ball.r, maxX = GW() - MARGIN - ball.r; // horizontal limits
+  const minY = MARGIN + ball.r, maxY = GH() - MARGIN - ball.r; // vertical limits
+  if(ball.x < minX){ ball.x = minX; ball.vx =  Math.abs(ball.vx)*0.7; } // bounce off left wall (lose 30% speed)
+  if(ball.x > maxX){ ball.x = maxX; ball.vx = -Math.abs(ball.vx)*0.7; } // bounce off right wall
+  if(ball.y < minY){ ball.y = minY; ball.vy =  Math.abs(ball.vy)*0.7; } // bounce off top wall
+  if(ball.y > maxY){ ball.y = maxY; ball.vy = -Math.abs(ball.vy)*0.7; } // bounce off bottom wall
 }
+
+// keeps a player circle entirely within the field boundaries
 function clampPlayer(p) {
-  p.x=Math.max(MARGIN+PLAYER_R,Math.min(GW()-MARGIN-PLAYER_R,p.x));
-  p.y=Math.max(MARGIN+PLAYER_R,Math.min(GH()-MARGIN-PLAYER_R,p.y));
+  p.x = Math.max(MARGIN + PLAYER_R, Math.min(GW() - MARGIN - PLAYER_R, p.x)); // clamp horizontally
+  p.y = Math.max(MARGIN + PLAYER_R, Math.min(GH() - MARGIN - PLAYER_R, p.y)); // clamp vertically
 }
 
-// ─── Draw ─────────────────────────────────────────────────────────────────────
+// =============================================================================
+// DRAWING
+// All drawing uses the canvas 2D context (ctx). Each function handles one
+// visual element. drawPlayer() draws the shadow, tackle/freeze rings, body
+// circle, shine highlight, and name label. drawBall() draws the ball shadow,
+// white circle, outline, and shine. drawStaminaRing() draws an arc around
+// a player that shows their remaining stamina.
+// =============================================================================
+
+// draws a single player at their smoothed render position (rx, ry)
 function drawPlayer(p) {
-  const x=p.rx, y=p.ry;
-  const isTackling = p.tackling;
+  const x = p.rx, y = p.ry;      // use render position (smoother than physics position)
+  const isTackling = p.tackling; // snapshot tackle state for this frame
 
-  // Shadow
+  // drop shadow: a dark semi-transparent ellipse offset below the player
   ctx.beginPath();
-  ctx.ellipse(x+3,y+5,PLAYER_R*0.85,PLAYER_R*0.4,0,0,Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.25)"; ctx.fill();
+  ctx.ellipse(x+3, y+5, PLAYER_R*0.85, PLAYER_R*0.4, 0, 0, Math.PI*2);
+  ctx.fillStyle = "rgba(0,0,0,0.25)"; ctx.fill();
 
-  // Tackle ring
+  // yellow ring shown while the player is executing a slide tackle
   if (isTackling) {
     ctx.beginPath();
-    ctx.arc(x,y,PLAYER_R+6,0,Math.PI*2);
-    ctx.strokeStyle="rgba(255,220,50,0.85)"; ctx.lineWidth=3; ctx.stroke();
+    ctx.arc(x, y, PLAYER_R+6, 0, Math.PI*2);
+    ctx.strokeStyle = "rgba(255,220,50,0.85)"; ctx.lineWidth = 3; ctx.stroke();
   }
 
-  // Frozen ring
+  // icy blue ring shown while the freeze-GK powerup is active on this player
   if (p.frozen) {
     ctx.beginPath();
-    ctx.arc(x,y,PLAYER_R+5,0,Math.PI*2);
-    ctx.strokeStyle="rgba(165,216,255,0.9)"; ctx.lineWidth=4; ctx.stroke();
+    ctx.arc(x, y, PLAYER_R+5, 0, Math.PI*2);
+    ctx.strokeStyle = "rgba(165,216,255,0.9)"; ctx.lineWidth = 4; ctx.stroke();
   }
 
-  // Body
-  ctx.beginPath(); ctx.arc(x,y,PLAYER_R,0,Math.PI*2);
-  ctx.fillStyle=p.color; ctx.fill();
-  ctx.lineWidth=p.isUser||p.isP2?3:2.5;
-  ctx.strokeStyle=p.isUser||p.isP2?"#fff":"rgba(255,255,255,0.8)";
+  // main player circle filled with the team colour
+  ctx.beginPath(); ctx.arc(x, y, PLAYER_R, 0, Math.PI*2);
+  ctx.fillStyle = p.color; ctx.fill();
+  // thicker white border for human-controlled players so they're easy to spot
+  ctx.lineWidth = p.isUser || p.isP2 ? 3 : 2.5;
+  ctx.strokeStyle = p.isUser || p.isP2 ? "#fff" : "rgba(255,255,255,0.8)";
   ctx.stroke();
 
-  // Shine
+  // small semi-transparent white highlight to give the circle a 3D shine
   ctx.beginPath();
-  ctx.arc(x-PLAYER_R*0.28,y-PLAYER_R*0.28,PLAYER_R*0.38,0,Math.PI*2);
-  ctx.fillStyle="rgba(255,255,255,0.18)"; ctx.fill();
+  ctx.arc(x - PLAYER_R*0.28, y - PLAYER_R*0.28, PLAYER_R*0.38, 0, Math.PI*2);
+  ctx.fillStyle = "rgba(255,255,255,0.18)"; ctx.fill();
 
-  // Label
-  ctx.font="bold 11px Arial"; ctx.textAlign="center";
-  ctx.fillStyle="#fff"; ctx.fillText(p.label,x,y+4);
+  // player label (e.g. "YOU", "GK", "BOT") drawn in the center of the circle
+  ctx.font = "bold 11px Arial"; ctx.textAlign = "center";
+  ctx.fillStyle = "#fff"; ctx.fillText(p.label, x, y+4); // +4 to vertically center in circle
 }
 
+// draws the ball at its smoothed render position
 function drawBall() {
-  const x=ball.rx, y=ball.ry, r=ball.r;
-  ctx.beginPath();
-  ctx.ellipse(x+2,y+4,r*0.85,r*0.4,0,0,Math.PI*2);
-  ctx.fillStyle="rgba(0,0,0,0.3)"; ctx.fill();
+  const x = ball.rx, y = ball.ry, r = ball.r;
 
-  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
-  ctx.fillStyle="#fff"; ctx.fill();
-  ctx.lineWidth=1.5; ctx.strokeStyle="#222"; ctx.stroke();
-
+  // drop shadow ellipse below the ball
   ctx.beginPath();
-  ctx.arc(x-r*0.3,y-r*0.3,r*0.35,0,Math.PI*2);
-  ctx.fillStyle="rgba(255,255,255,0.6)"; ctx.fill();
+  ctx.ellipse(x+2, y+4, r*0.85, r*0.4, 0, 0, Math.PI*2);
+  ctx.fillStyle = "rgba(0,0,0,0.3)"; ctx.fill();
+
+  // white ball body
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = "#fff"; ctx.fill();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = "#222"; ctx.stroke(); // dark outline
+
+  // small bright highlight to make the ball look spherical
+  ctx.beginPath();
+  ctx.arc(x - r*0.3, y - r*0.3, r*0.35, 0, Math.PI*2);
+  ctx.fillStyle = "rgba(255,255,255,0.6)"; ctx.fill();
 }
 
-// Stamina rings around user players
+// draws a partial arc around a player showing their remaining stamina (0–100%)
 function drawStaminaRing(p, stamina, color) {
-  const pct = stamina / STAMINA_MAX;
+  const pct = stamina / STAMINA_MAX; // fraction of stamina remaining (0–1)
   ctx.beginPath();
+  // arc from 12 o'clock (-π/2) sweeping clockwise by (pct × full circle)
   ctx.arc(p.rx, p.ry, PLAYER_R+5, -Math.PI/2, -Math.PI/2 + Math.PI*2*pct);
-  ctx.strokeStyle = color;
+  ctx.strokeStyle = color; // blue for P1, red for P2
   ctx.lineWidth = 3;
-  ctx.globalAlpha = 0.7;
+  ctx.globalAlpha = 0.7; // slightly transparent so it doesn't overpower the player
   ctx.stroke();
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = 1; // reset opacity
 }
 
-// ─── Main loop ────────────────────────────────────────────────────────────────
+// =============================================================================
+// MAIN GAME LOOP
+// gameLoop() runs ~60 times per second (driven by requestAnimationFrame).
+// Each tick it:
+//   1. Updates player positions (human input or AI)
+//   2. Moves the ball and applies friction
+//   3. Detects goals and unsticks a stuck ball
+//   4. Smooths render positions toward physics positions (lerp)
+//   5. Clears the canvas and redraws everything
+// =============================================================================
 function gameLoop() {
-  frameCount++;
+  frameCount++; // increment frame counter (used for debugging / future features)
 
   if (gameRunning) {
+    // update powerup effects (ball size, frozen goalkeepers)
     applyPowerupEffects();
+    // check if any player walked over a powerup this frame
     checkPowerupCollisions();
+    // count down tackle timers for all players
     updateTackles();
+    // tick the match countdown clock
     updateTimer();
 
+    // update every player's position
     for (const p of players) {
-      if      (p.isUser) updateUser(p);
-      else if (p.isP2)   updateP2(p);
-      else               updateAI(p);
-      clampPlayer(p);
-      p.rx += (p.x - p.rx)*0.35;
-      p.ry += (p.y - p.ry)*0.35;
+      if      (p.isUser) updateUser(p); // human P1 reads keyboard
+      else if (p.isP2)   updateP2(p);   // human P2 reads IJKL
+      else               updateAI(p);   // everyone else is AI
+      clampPlayer(p); // keep player inside the field
+      // lerp render position toward physics position for smooth visuals
+      p.rx += (p.x - p.rx) * 0.35; // 35% of the gap closed each frame
+      p.ry += (p.y - p.ry) * 0.35;
     }
 
-    ball.x += ball.vx; ball.y += ball.vy;
-    ball.vx *= SPEEDS.ballFriction; ball.vy *= SPEEDS.ballFriction;
-    clampBall(); checkGoals();
+    // move the ball and apply rolling friction
+    ball.x  += ball.vx;              // advance horizontal position
+    ball.y  += ball.vy;              // advance vertical position
+    ball.vx *= SPEEDS.ballFriction;  // slow down horizontal velocity
+    ball.vy *= SPEEDS.ballFriction;  // slow down vertical velocity
+    clampBall();  // bounce off walls
+    checkGoals(); // detect if a goal was scored
 
-    const moved = Math.hypot(ball.x-lastBallX, ball.y-lastBallY);
+    // stuck-ball detector: if the ball barely moves for 70 frames, pop it free
+    const moved = Math.hypot(ball.x-lastBallX, ball.y-lastBallY); // distance moved this frame
     if (moved < 0.4) {
-      if (++stuckFrames > 70) {
-        ball.vx += (Math.random()-0.5)*5;
-        ball.vy += (Math.random()-0.5)*5;
-        stuckFrames = 0;
+      if (++stuckFrames > 70) { // ball has been nearly stationary for ~1 second
+        ball.vx += (Math.random()-0.5) * 5; // random horizontal kick to unstick
+        ball.vy += (Math.random()-0.5) * 5; // random vertical kick to unstick
+        stuckFrames = 0; // reset the stuck counter
       }
-    } else stuckFrames = 0;
-    lastBallX = ball.x; lastBallY = ball.y;
+    } else {
+      stuckFrames = 0; // ball moved, so it's not stuck
+    }
+    lastBallX = ball.x; // save position for next frame's stuck check
+    lastBallY = ball.y;
 
-    ball.rx += (ball.x-ball.rx)*0.30;
-    ball.ry += (ball.y-ball.ry)*0.30;
-    updateTrail();
+    // lerp ball render position toward physics position for smooth visuals
+    ball.rx += (ball.x - ball.rx) * 0.30; // 30% of the gap closed each frame
+    ball.ry += (ball.y - ball.ry) * 0.30;
+
+    updateTrail(); // record current ball position in the trail history
   }
 
-  updateConfetti();
+  updateConfetti(); // move and fade confetti particles even when game is paused
 
-  // ── Render ──
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawTrail();
-  drawPowerups();
-  for (const p of players) drawPlayer(p);
-  // Stamina rings
-  const p1 = players.find(p=>p.isUser);
-  const p2 = players.find(p=>p.isP2);
-  if (p1) drawStaminaRing(p1, staminaP1, "#4dabf7");
-  if (p2) drawStaminaRing(p2, staminaP2, "#ff6b6b");
-  drawBall();
-  drawConfetti();
+  // ── Render ──────────────────────────────────────────────────────────────────
+  ctx.clearRect(0, 0, canvas.width, canvas.height); // wipe the canvas each frame
+  drawTrail();    // draw the motion trail behind the ball
+  drawPowerups(); // draw powerup icons and floating labels
+  for (const p of players) drawPlayer(p); // draw all players
+  // draw stamina rings around the two human players
+  const p1 = players.find(p => p.isUser); // find P1 by isUser flag
+  const p2 = players.find(p => p.isP2);   // find P2 by isP2 flag
+  if (p1) drawStaminaRing(p1, staminaP1, "#4dabf7"); // blue ring for P1
+  if (p2) drawStaminaRing(p2, staminaP2, "#ff6b6b"); // red ring for P2
+  drawBall();     // draw the ball on top of everything else
+  drawConfetti(); // draw confetti on the very top
 
-  requestAnimationFrame(gameLoop);
+  requestAnimationFrame(gameLoop); // schedule the next frame (~16ms later)
 }
 
-gameLoop();
+gameLoop(); // kick off the game loop on page load
 </script>
 </body>
 </html>
